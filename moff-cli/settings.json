@@ -3,22 +3,22 @@
   "prefixes": {
     "feature": [
       {
-        "meatadata": {
+        "metadata": {
           "project": "string",
           "feature": "string",
-          "linked_files": "list"
+          "linked_features": "list"
         }
       },
       {
         "header": {
           "level": 1,
-          "content": "Overview"
+          "text": "Overview"
         }
       },
       {
         "header": {
           "level": 2,
-          "content": "Requirements"
+          "text": "Requirements"
         }
       }
     ],
@@ -27,19 +27,19 @@
         "metadata": {
           "project": "string",
           "feature": "string",
-          "linked_files": "list"
+          "linked_features": "list"
         }
       },
       {
         "header": {
           "level": 1,
-          "content": "Technical Details"
+          "text": "Technical Details"
         }
       },
       {
         "header": {
           "level": 1,
-          "content": "Implementation Details"
+          "text": "Implementation Details"
         }
       }
     ]
