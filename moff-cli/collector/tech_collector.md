@@ -17,6 +17,8 @@ The collector feature requires the following technologies:
 
 The `markdown-to-data` library is used to convert Markdown files into python list of dictionaries. It provides a simple and efficient way to extract information from Markdown files and store it in a structured format.
 
+Link to [markdown-to-data README](https://github.com/lennartpollvogt/markdown-to-data/blob/main/README.md)
+
 The purpose of this library within `moff-cli` is to collect the content of each markdown file and save it into a structured format, which represents the hierarchy of the project's repository.
 
 **Usage**:

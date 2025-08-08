@@ -1,0 +1,47 @@
+{
+  "root": ["project"],
+  "prefixes": {
+    "feature": [
+      {
+        "meatadata": {
+          "project": "string",
+          "feature": "string",
+          "linked_files": "list"
+        }
+      },
+      {
+        "header": {
+          "level": 1,
+          "content": "Overview"
+        }
+      },
+      {
+        "header": {
+          "level": 2,
+          "content": "Requirements"
+        }
+      }
+    ],
+    "tech": [
+      {
+        "metadata": {
+          "project": "string",
+          "feature": "string",
+          "linked_files": "list"
+        }
+      },
+      {
+        "header": {
+          "level": 1,
+          "content": "Technical Details"
+        }
+      },
+      {
+        "header": {
+          "level": 1,
+          "content": "Implementation Details"
+        }
+      }
+    ]
+  }
+}
