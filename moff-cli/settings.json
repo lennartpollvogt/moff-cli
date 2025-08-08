@@ -1,47 +1,104 @@
 {
-  "root": ["project"],
+  "version": 1,
+  "root": {
+    "detect": {
+      "method": "project_file",
+      "pattern": "project_*.md"
+    },
+    "override_path": null,
+    "ignore": ["**/.git/**", "**/.venv/**", "**/node_modules/**"]
+  },
   "prefixes": {
-    "feature": [
-      {
-        "metadata": {
+    "project": {
+      "filename": {
+        "pattern": "project_*.md"
+      },
+      "location": "root_only",
+      "frontmatter": {
+        "required": {
+          "project": "string"
+        },
+        "optional": {}
+      },
+      "headers": {
+        "required": [
+          {
+            "level": 1,
+            "text": "Overview",
+            "match": "exact"
+          }
+        ],
+        "optional": [
+          {
+            "level": 2,
+            "text": "Requirements",
+            "match": "exact"
+          }
+        ],
+        "order": "in-order"
+      }
+    },
+    "feature": {
+      "filename": {
+        "pattern": "feature_*.md"
+      },
+      "location": "any",
+      "frontmatter": {
+        "required": {
           "project": "string",
+          "feature": "string"
+        },
+        "optional": {
+          "linked_features": "list"
+        }
+      },
+      "headers": {
+        "required": [
+          {
+            "level": 1,
+            "text": "Overview",
+            "match": "exact"
+          },
+          {
+            "level": 2,
+            "text": "Requirements",
+            "match": "exact"
+          }
+        ],
+        "optional": [],
+        "order": "strict"
+      }
+    },
+    "tech": {
+      "filename": {
+        "pattern": "tech_*.md"
+      },
+      "location": "subdirs_only",
+      "frontmatter": {
+        "required": {
+          "project": "string"
+        },
+        "optional": {
           "feature": "string",
           "linked_features": "list"
         }
       },
-      {
-        "header": {
-          "level": 1,
-          "text": "Overview"
-        }
-      },
-      {
-        "header": {
-          "level": 2,
-          "text": "Requirements"
-        }
+      "headers": {
+        "required": [
+          {
+            "level": 1,
+            "text": "Technical Details",
+            "match": "exact"
+          },
+          {
+            "level": 1,
+            "text": "Implementation Details",
+            "match": "exact"
+          }
+        ],
+        "optional": [],
+        "order": "in-order"
       }
-    ],
-    "tech": [
-      {
-        "metadata": {
-          "project": "string",
-          "feature": "string",
-          "linked_features": "list"
-        }
-      },
-      {
-        "header": {
-          "level": 1,
-          "text": "Technical Details"
-        }
-      },
-      {
-        "header": {
-          "level": 1,
-          "text": "Implementation Details"
-        }
-      }
-    ]
+    }
   }
 }

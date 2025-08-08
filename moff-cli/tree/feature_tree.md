@@ -19,7 +19,7 @@ moff-cli
 │   └── save
 │       ├── feature_save.md
 │       └── tech_save.md
-│── collector
+├── collector
 │   ├── feature_collector.md
 │   └── tech_collector.md
 ```

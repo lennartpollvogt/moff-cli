@@ -2,7 +2,7 @@
 project: moff-cli
 ---
 
-# Overview: moff_project
+# Overview
 
 This folder directory is the specification of the `moff-cli` application. It provides the documentation and requirements for its development, containing all the features and their specifications.
 

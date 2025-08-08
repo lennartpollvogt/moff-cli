@@ -1,10 +1,10 @@
 ---
 project: moff-cli
 feature: collector
-linked_files: [feature_collector.md]
+linked_features: [feature_collector.md]
 ---
 
-# Technical Requirements
+# Technical Details
 
 The collector feature requires the following technologies:
 
