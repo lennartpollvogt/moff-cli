@@ -41,27 +41,14 @@ pip install moff-cli
 uv add moff-cli
 ```
 
-### From source
-
-```bash
-git clone https://github.com/yourusername/moff-cli.git
-cd moff-cli
-pip install -e .
-```
-
 ## 🚀 Quick Start
 
-1. **Initialize configuration** (creates `settings.json`):
-```bash
-moff init
-```
-
-2. **Check your documentation**:
+1. **Check your documentation** (creates `settings.json` automatically if not present):
 ```bash
 moff check
 ```
 
-3. **Visualize documentation structure**:
+2. **Visualize documentation structure**:
 ```bash
 moff tree
 ```
@@ -81,9 +68,6 @@ moff check --path ./docs      # Check specific directory
 moff tree                      # Display documentation tree
 moff tree --errors-only       # Show only files with errors
 moff tree --no-check          # Skip validation (faster)
-
-moff init                      # Create default settings.json
-moff init --force            # Overwrite existing settings.json
 ```
 
 ### Example: Setting Up a Project
@@ -104,12 +88,7 @@ This is my application's main documentation.
 - Rich library
 ```
 
-2. **Initialize MOFF**:
-```bash
-moff init
-```
-
-3. **Create feature documentation** (`features/feature_auth.md`):
+2. **Create feature documentation** (`features/feature_auth.md`):
 ```markdown
 ---
 project: myapp
@@ -128,7 +107,7 @@ Authentication system for the application.
 - Session management
 ```
 
-4. **Validate your documentation**:
+3. **Validate your documentation** (this will create `settings.json` if it doesn't exist):
 ```bash
 moff check
 ```

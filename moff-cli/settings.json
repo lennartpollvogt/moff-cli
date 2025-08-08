@@ -6,13 +6,14 @@
       "pattern": "project_*.md"
     },
     "override_path": null,
-    "ignore": ["**/.git/**", "**/.venv/**", "**/node_modules/**"]
+    "ignore": [
+      "**/.git/**",
+      "**/.venv/**",
+      "**/node_modules/**"
+    ]
   },
   "prefixes": {
     "project": {
-      "filename": {
-        "pattern": "project_*.md"
-      },
       "location": "root_only",
       "frontmatter": {
         "required": {
@@ -36,12 +37,12 @@
           }
         ],
         "order": "in-order"
+      },
+      "filename": {
+        "pattern": "project_*.md"
       }
     },
     "feature": {
-      "filename": {
-        "pattern": "feature_*.md"
-      },
       "location": "any",
       "frontmatter": {
         "required": {
@@ -67,12 +68,12 @@
         ],
         "optional": [],
         "order": "strict"
+      },
+      "filename": {
+        "pattern": "feature_*.md"
       }
     },
     "tech": {
-      "filename": {
-        "pattern": "tech_*.md"
-      },
       "location": "subdirs_only",
       "frontmatter": {
         "required": {
@@ -98,6 +99,9 @@
         ],
         "optional": [],
         "order": "in-order"
+      },
+      "filename": {
+        "pattern": "tech_*.md"
       }
     }
   }

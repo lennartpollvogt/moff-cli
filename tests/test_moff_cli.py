@@ -340,6 +340,40 @@ class TestChecker:
         assert "Requirements" in diagnostics[0].message
         assert diagnostics[0].severity == Severity.ERROR
 
+    def test_settings_auto_creation(self):
+        """Test that settings.json is automatically created when it doesn't exist."""
+        with TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+
+            # Create project file but no settings.json
+            (tmppath / "project_test.md").write_text(
+                "---\nproject: test\n---\n# Overview\nTest project"
+            )
+
+            # Verify settings.json doesn't exist initially
+            settings_path = tmppath / "settings.json"
+            assert not settings_path.exists()
+
+            # Create Settings instance without existing file
+            settings = Settings()
+
+            # Create and save default settings
+            Settings.create_default_settings_file(tmppath)
+
+            # Verify settings.json was created
+            assert settings_path.exists()
+
+            # Load and verify the created settings
+            with open(settings_path, 'r') as f:
+                saved_settings = json.load(f)
+
+            assert saved_settings["version"] == 1
+            assert "root" in saved_settings
+            assert "prefixes" in saved_settings
+            assert "project" in saved_settings["prefixes"]
+            assert "feature" in saved_settings["prefixes"]
+            assert "tech" in saved_settings["prefixes"]
+
 
 def test_integration_full_workflow():
     """Integration test: complete workflow from collection to checking."""

@@ -7,7 +7,6 @@ validation tool.
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
 
 from rich.console import Console
 
@@ -30,17 +29,33 @@ def cmd_check(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for errors).
     """
-    # Load settings
-    settings_path = args.path / "settings.json" if args.path else Path.cwd() / "settings.json"
-    settings = Settings(settings_path if settings_path.exists() else None)
+    # First, use default settings to find the documentation root
+    temp_settings = Settings()
+    temp_collector = Collector(temp_settings, start_path=args.path or Path.cwd())
 
-    # Create default settings.json if it doesn't exist and we're not using a custom path
-    if not settings_path.exists() and not args.path:
-        console.print("[yellow]No settings.json found. Creating default settings...[/yellow]")
-        Settings.create_default_settings_file(Path.cwd())
+    # Find documentation root (this will fail if no project_*.md exists)
+    console.print("[dim]Discovering documentation root...[/dim]")
+    collected_data = temp_collector.collect()
+
+    if collected_data.get("error"):
+        console.print(f"[red]Error: {collected_data['error']}[/red]")
+        return 1
+
+    # Now we know the documentation root
+    root_dir = Path(collected_data["root_directory"])
+    settings_path = root_dir / "settings.json"
+
+    # Create default settings.json if it doesn't exist
+    if not settings_path.exists():
+        console.print(f"[yellow]No settings.json found in documentation root: {root_dir}[/yellow]")
+        console.print("[yellow]Creating default settings...[/yellow]")
+        Settings.create_default_settings_file(root_dir)
         console.print(f"[green]Created: {settings_path}[/green]")
 
-    # Collect documentation
+    # Load settings from documentation root
+    settings = Settings(settings_path)
+
+    # Re-collect with proper settings
     console.print("[dim]Collecting documentation files...[/dim]")
     collector = Collector(settings, start_path=args.path or Path.cwd())
     collected_data = collector.collect()
@@ -49,7 +64,6 @@ def cmd_check(args: argparse.Namespace) -> int:
         console.print(f"[red]Error: {collected_data['error']}[/red]")
         return 1
 
-    root_dir = Path(collected_data["root_directory"])
     console.print(f"[dim]Root directory: {root_dir}[/dim]\n")
 
     # Run validation
@@ -123,11 +137,32 @@ def cmd_tree(args: argparse.Namespace) -> int:
     Returns:
         Exit code (always 0 for tree command).
     """
-    # Load settings
-    settings_path = args.path / "settings.json" if args.path else Path.cwd() / "settings.json"
-    settings = Settings(settings_path if settings_path.exists() else None)
+    # First, use default settings to find the documentation root
+    temp_settings = Settings()
+    temp_collector = Collector(temp_settings, start_path=args.path or Path.cwd())
 
-    # Collect documentation
+    # Find documentation root (this will fail if no project_*.md exists)
+    collected_data = temp_collector.collect()
+
+    if collected_data.get("error"):
+        console.print(f"[red]Error: {collected_data['error']}[/red]")
+        return 1
+
+    # Now we know the documentation root
+    root_dir = Path(collected_data["root_directory"])
+    settings_path = root_dir / "settings.json"
+
+    # Create default settings.json if it doesn't exist
+    if not settings_path.exists():
+        console.print(f"[yellow]No settings.json found in documentation root: {root_dir}[/yellow]")
+        console.print("[yellow]Creating default settings...[/yellow]")
+        Settings.create_default_settings_file(root_dir)
+        console.print(f"[green]Created: {settings_path}[/green]")
+
+    # Load settings from documentation root
+    settings = Settings(settings_path)
+
+    # Re-collect with proper settings
     collector = Collector(settings, start_path=args.path or Path.cwd())
     collected_data = collector.collect()
 
@@ -152,39 +187,6 @@ def cmd_tree(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_init(args: argparse.Namespace) -> int:
-    """Execute the init command.
-
-    Args:
-        args: Parsed command-line arguments.
-
-    Returns:
-        Exit code (0 for success, 1 for failure).
-    """
-    target_dir = args.path or Path.cwd()
-    settings_path = target_dir / "settings.json"
-
-    if settings_path.exists() and not args.force:
-        console.print(f"[yellow]settings.json already exists at: {settings_path}[/yellow]")
-        console.print("Use --force to overwrite the existing file.")
-        return 1
-
-    # Create default settings
-    settings = Settings()
-    settings.save_to_file(settings_path)
-
-    console.print(f"[green]✓ Created default settings.json at: {settings_path}[/green]")
-
-    # Display preview of settings
-    if args.verbose:
-        console.print("\n[bold]Settings preview:[/bold]")
-        console.print(f"  Version: {settings.version}")
-        console.print(f"  Root detection: {settings.root.detect_pattern}")
-        console.print(f"  Configured prefixes: {', '.join(settings.get_all_prefixes())}")
-
-    return 0
-
-
 def main() -> int:
     """Main entry point for the CLI.
 
@@ -202,8 +204,6 @@ Examples:
   moff check --save            # Run checks and save results
   moff tree                    # Display documentation structure
   moff tree --errors-only      # Show only files with errors
-  moff init                    # Create default settings.json
-  moff init --force           # Overwrite existing settings.json
 
 For more information, visit: https://github.com/yourusername/moff-cli
         """
@@ -266,28 +266,6 @@ For more information, visit: https://github.com/yourusername/moff-cli
         help="Path to documentation root (default: current directory)"
     )
 
-    # Init command
-    parser_init = subparsers.add_parser(
-        "init",
-        help="Create a default settings.json file",
-        description="Initialize a new moff configuration with default settings."
-    )
-    parser_init.add_argument(
-        "--force",
-        action="store_true",
-        help="Overwrite existing settings.json file"
-    )
-    parser_init.add_argument(
-        "--path",
-        type=Path,
-        help="Path where to create settings.json (default: current directory)"
-    )
-    parser_init.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Show verbose output"
-    )
-
     # Parse arguments
     args = parser.parse_args()
 
@@ -302,8 +280,6 @@ For more information, visit: https://github.com/yourusername/moff-cli
             return cmd_check(args)
         elif args.command == "tree":
             return cmd_tree(args)
-        elif args.command == "init":
-            return cmd_init(args)
         else:
             parser.print_help()
             return 1

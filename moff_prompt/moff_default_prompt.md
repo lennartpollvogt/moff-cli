@@ -26,8 +26,8 @@ The `moff` CLI tool is your primary interface for validating and maintaining mar
 - `moff tree --no-check` - Display tree without running validation (faster)
 
 ### Configuration
-- `moff init` - Create default `settings.json` configuration file
-- `moff init --force` - Overwrite existing configuration
+- The `settings.json` configuration file is created automatically on first run if not present
+- Default settings are used when no configuration file exists
 
 ## Key Concepts
 
@@ -51,6 +51,7 @@ Always run `moff check` before modifying documentation to understand the current
 ```bash
 moff check
 ```
+Note: If no `settings.json` exists, it will be created automatically with default settings on first run.
 
 ### After Making Changes
 1. Validate your changes: `moff check`
@@ -69,7 +70,7 @@ moff check
 2. Use correct filename pattern (e.g., `feature_authentication.md`)
 3. Include required frontmatter fields
 4. Follow required header structure
-5. Validate with `moff check`
+5. Validate with `moff check` (this will create `settings.json` if it doesn't exist)
 
 ### Fixing Validation Issues
 1. Run `moff check` to see all issues
