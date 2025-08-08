@@ -1,15 +1,15 @@
 """Tests for the Tree visualization feature."""
 
-import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
+
 from rich.console import Console
 from rich.tree import Tree
 
-from moff_cli.settings import Settings
-from moff_cli.collector import Collector
 from moff_cli.check import Checker, Diagnostic, Severity
+from moff_cli.collector import Collector
+from moff_cli.settings import Settings
 from moff_cli.tree import TreeVisualizer
 
 

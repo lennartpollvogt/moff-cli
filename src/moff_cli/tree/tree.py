@@ -6,20 +6,20 @@ inconsistencies detected by the check feature.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
+
 from rich.console import Console
 from rich.tree import Tree
-from rich.text import Text
 
-from ..settings import Settings
-from ..collector import Collector
 from ..check import Checker, Diagnostic, Severity
+from ..collector import Collector
+from ..settings import Settings
 
 
 class TreeVisualizer:
     """Visualizes documentation structure as a tree."""
 
-    def __init__(self, settings: Settings, console: Optional[Console] = None):
+    def __init__(self, settings: Settings, console: Console | None = None):
         """Initialize the tree visualizer.
 
         Args:
@@ -31,8 +31,8 @@ class TreeVisualizer:
 
     def show_tree(
         self,
-        collected_data: Dict[str, Any],
-        diagnostics: Optional[List[Diagnostic]] = None,
+        collected_data: dict[str, Any],
+        diagnostics: list[Diagnostic] | None = None,
         show_only_errors: bool = False
     ) -> None:
         """Display the documentation tree structure.
@@ -87,7 +87,7 @@ class TreeVisualizer:
         if diagnostics:
             self._show_summary(len(all_files), len(error_files), len(warning_files))
 
-    def _get_all_files(self, collected_data: Dict[str, Any]) -> List[str]:
+    def _get_all_files(self, collected_data: dict[str, Any]) -> list[str]:
         """Extract all file paths from collected data.
 
         Args:
@@ -105,7 +105,7 @@ class TreeVisualizer:
 
         return sorted(all_files)
 
-    def _build_directory_structure(self, file_paths: List[str]) -> Dict[str, Any]:
+    def _build_directory_structure(self, file_paths: list[str]) -> dict[str, Any]:
         """Build a nested dictionary representing the directory structure.
 
         Args:
@@ -137,9 +137,9 @@ class TreeVisualizer:
     def _add_nodes_to_tree(
         self,
         tree_node: Tree,
-        structure: Dict[str, Any],
-        error_files: Set[str],
-        warning_files: Set[str],
+        structure: dict[str, Any],
+        error_files: set[str],
+        warning_files: set[str],
         current_path: str
     ) -> None:
         """Recursively add nodes to the tree.
@@ -209,7 +209,7 @@ class TreeVisualizer:
 
                 tree_node.add(file_display)
 
-    def _has_markdown_files(self, structure: Dict[str, Any]) -> bool:
+    def _has_markdown_files(self, structure: dict[str, Any]) -> bool:
         """Check if a directory structure contains markdown files.
 
         Args:
@@ -235,8 +235,8 @@ class TreeVisualizer:
     def _directory_has_issues(
         self,
         dir_path: str,
-        structure: Dict[str, Any],
-        issue_files: Set[str]
+        structure: dict[str, Any],
+        issue_files: set[str]
     ) -> bool:
         """Check if a directory or its subdirectories contain files with issues.
 
@@ -297,12 +297,12 @@ class TreeVisualizer:
         if error_count > 0:
             self.console.print(f"  Files with errors: [red]{error_count}[/red]")
         else:
-            self.console.print(f"  Files with errors: [green]0[/green]")
+            self.console.print("  Files with errors: [green]0[/green]")
 
         if warning_count > 0:
             self.console.print(f"  Files with warnings: [yellow]{warning_count}[/yellow]")
         else:
-            self.console.print(f"  Files with warnings: [green]0[/green]")
+            self.console.print("  Files with warnings: [green]0[/green]")
 
         if error_count == 0 and warning_count == 0:
             self.console.print("\n[green]✓ All files passed validation![/green]")
@@ -311,7 +311,7 @@ class TreeVisualizer:
 
 
 def display_tree(
-    start_path: Optional[Path] = None,
+    start_path: Path | None = None,
     show_errors: bool = True,
     show_only_errors: bool = False
 ) -> None:

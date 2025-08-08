@@ -6,16 +6,17 @@ markdown files, parsing them with markdown-to-data library.
 
 import fnmatch
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 from markdown_to_data import Markdown
 
-from ..settings import Settings, PrefixConfig
+from ..settings import Settings
 
 
 class Collector:
     """Collects and parses markdown files based on settings configuration."""
 
-    def __init__(self, settings: Settings, start_path: Optional[Path] = None):
+    def __init__(self, settings: Settings, start_path: Path | None = None):
         """Initialize the collector with settings.
 
         Args:
@@ -25,7 +26,7 @@ class Collector:
         self.settings = settings
         self.start_path = start_path or Path.cwd()
 
-    def collect(self) -> Dict[str, Any]:
+    def collect(self) -> dict[str, Any]:
         """Collect all markdown files according to settings.
 
         Returns:
@@ -54,7 +55,7 @@ class Collector:
             **grouped_files
         }
 
-    def _find_root(self) -> Dict[str, Any]:
+    def _find_root(self) -> dict[str, Any]:
         """Find the documentation root directory.
 
         Returns:
@@ -115,7 +116,7 @@ class Collector:
         return root_info
 
     def _find_files_by_pattern(self, start_path: Path, pattern: str,
-                              max_depth: int = 5) -> List[Path]:
+                              max_depth: int = 5) -> list[Path]:
         """Find files matching a pattern, searching from start_path.
 
         Args:
@@ -184,7 +185,7 @@ class Collector:
 
         return False
 
-    def _collect_markdown_files(self, root_directory: Path) -> List[Path]:
+    def _collect_markdown_files(self, root_directory: Path) -> list[Path]:
         """Collect all markdown files from root directory.
 
         Args:
@@ -216,8 +217,8 @@ class Collector:
         md_files.sort()
         return md_files
 
-    def _group_and_parse_files(self, md_files: List[Path],
-                               root_directory: Path) -> Dict[str, Dict[str, Any]]:
+    def _group_and_parse_files(self, md_files: list[Path],
+                               root_directory: Path) -> dict[str, dict[str, Any]]:
         """Group markdown files by prefix and parse them.
 
         Args:

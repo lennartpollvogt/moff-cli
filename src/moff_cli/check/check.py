@@ -7,12 +7,11 @@ headers are present in the correct order.
 
 import re
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
-from ..settings import Settings, LocationConstraint, HeaderOrder, HeaderMatch
-from ..collector import Collector
+from ..settings import HeaderMatch, HeaderOrder, LocationConstraint, Settings
 
 
 class Severity(str, Enum):
@@ -40,7 +39,7 @@ class Diagnostic:
         rule: str,
         message: str,
         severity: Severity = Severity.ERROR,
-        line: Optional[int] = None
+        line: int | None = None
     ):
         """Initialize a diagnostic.
 
@@ -59,7 +58,7 @@ class Diagnostic:
         self.severity = severity
         self.line = line
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "path": self.path,
@@ -86,10 +85,10 @@ class Checker:
             settings: The Settings object containing validation rules.
         """
         self.settings = settings
-        self.diagnostics: List[Diagnostic] = []
+        self.diagnostics: list[Diagnostic] = []
         self.total_files_checked: int = 0
 
-    def check(self, collected_data: Dict[str, Any]) -> List[Diagnostic]:
+    def check(self, collected_data: dict[str, Any]) -> list[Diagnostic]:
         """Perform validation on collected documentation.
 
         Args:
@@ -137,7 +136,7 @@ class Checker:
 
         return self.diagnostics
 
-    def _check_root_conditions(self, collected_data: Dict[str, Any]) -> None:
+    def _check_root_conditions(self, collected_data: dict[str, Any]) -> None:
         """Check root-level conditions.
 
         Args:
@@ -174,7 +173,7 @@ class Checker:
     def _validate_file(
         self,
         file_path: str,
-        file_data: Dict[str, Any],
+        file_data: dict[str, Any],
         prefix_name: str,
         prefix_config: Any
     ) -> None:
@@ -214,7 +213,7 @@ class Checker:
     def _validate_location(
         self,
         file_path: str,
-        file_data: Dict[str, Any],
+        file_data: dict[str, Any],
         prefix_name: str,
         prefix_config: Any
     ) -> None:
@@ -253,7 +252,7 @@ class Checker:
     def _validate_frontmatter(
         self,
         file_path: str,
-        md_list: List[Dict[str, Any]],
+        md_list: list[dict[str, Any]],
         prefix_name: str,
         prefix_config: Any
     ) -> None:
@@ -334,7 +333,7 @@ class Checker:
     def _validate_headers(
         self,
         file_path: str,
-        md_list: List[Dict[str, Any]],
+        md_list: list[dict[str, Any]],
         prefix_name: str,
         prefix_config: Any
     ) -> None:
@@ -434,7 +433,7 @@ class Checker:
                         )
                         break
 
-    def save_results(self, root_directory: Path, diagnostics: List[Diagnostic]) -> Path:
+    def save_results(self, root_directory: Path, diagnostics: list[Diagnostic]) -> Path:
         """Save validation results to moff_results.txt.
 
         Args:
@@ -487,7 +486,7 @@ class Checker:
 
         return results_path
 
-    def get_exit_code(self, diagnostics: List[Diagnostic]) -> int:
+    def get_exit_code(self, diagnostics: list[Diagnostic]) -> int:
         """Determine exit code based on diagnostics.
 
         Args:

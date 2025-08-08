@@ -5,24 +5,19 @@ Designed to work seamlessly with LLMs in modern IDEs.
 """
 
 from .__version__ import __version__
+from .check import Checker, Diagnostic, RuleCategory, Severity
+from .cli import main
+from .collector import Collector
 from .settings import (
-    Settings,
-    PrefixConfig,
-    RootConfig,
+    HeaderMatch,
+    HeaderOrder,
     HeaderRule,
     LocationConstraint,
-    HeaderOrder,
-    HeaderMatch
-)
-from .collector import Collector
-from .check import (
-    Checker,
-    Diagnostic,
-    Severity,
-    RuleCategory
+    PrefixConfig,
+    RootConfig,
+    Settings,
 )
 from .tree import TreeVisualizer, display_tree
-from .cli import main
 
 __all__ = [
     # Version

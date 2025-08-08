@@ -1,13 +1,13 @@
 """Settings module for moff-cli."""
 
 from .settings import (
-    Settings,
-    PrefixConfig,
-    RootConfig,
+    HeaderMatch,
+    HeaderOrder,
     HeaderRule,
     LocationConstraint,
-    HeaderOrder,
-    HeaderMatch
+    PrefixConfig,
+    RootConfig,
+    Settings,
 )
 
 __all__ = [

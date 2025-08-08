@@ -1,14 +1,12 @@
 """Tests for moff-cli modules."""
 
 import json
-import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, Any
 
-from moff_cli.settings import Settings, LocationConstraint, HeaderOrder, HeaderMatch, HeaderRule
+from moff_cli.check import Checker, Severity
 from moff_cli.collector import Collector
-from moff_cli.check import Checker, Diagnostic, Severity
+from moff_cli.settings import LocationConstraint, Settings
 
 
 class TestSettings:
@@ -197,7 +195,6 @@ class TestCollector:
 
             # Verify ignored files are not collected
             feature_files = result.get("feature", {})
-            file_names = [Path(p).name for p in feature_files.keys()]
 
             assert "feature_valid.md" in str(list(feature_files.keys())[0])
             assert "feature_ignored.md" not in str(feature_files)
@@ -354,9 +351,6 @@ class TestChecker:
             settings_path = tmppath / "settings.json"
             assert not settings_path.exists()
 
-            # Create Settings instance without existing file
-            settings = Settings()
-
             # Create and save default settings
             Settings.create_default_settings_file(tmppath)
 
@@ -364,7 +358,7 @@ class TestChecker:
             assert settings_path.exists()
 
             # Load and verify the created settings
-            with open(settings_path, 'r') as f:
+            with open(settings_path) as f:
                 saved_settings = json.load(f)
 
             assert saved_settings["version"] == 1

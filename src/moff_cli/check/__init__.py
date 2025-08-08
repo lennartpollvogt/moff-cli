@@ -1,11 +1,6 @@
 """Check module for moff-cli."""
 
-from .check import (
-    Checker,
-    Diagnostic,
-    Severity,
-    RuleCategory
-)
+from .check import Checker, Diagnostic, RuleCategory, Severity
 
 __all__ = [
     "Checker",

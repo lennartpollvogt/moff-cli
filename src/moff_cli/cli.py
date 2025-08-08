@@ -10,12 +10,11 @@ from pathlib import Path
 
 from rich.console import Console
 
-from .settings import Settings
-from .collector import Collector
-from .check import Checker, Severity
-from .tree import TreeVisualizer
 from .__version__ import __version__
-
+from .check import Checker, Severity
+from .collector import Collector
+from .settings import Settings
+from .tree import TreeVisualizer
 
 console = Console()
 

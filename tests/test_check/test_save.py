@@ -1,14 +1,12 @@
 """Tests for the Save feature of the Check module."""
 
-import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from moff_cli.settings import Settings
-from moff_cli.collector import Collector
 from moff_cli.check import Checker, Diagnostic, Severity
+from moff_cli.collector import Collector
+from moff_cli.settings import Settings
 
 
 class TestSaveFeature:
@@ -326,8 +324,9 @@ class TestSaveIntegrationWithCLI:
             )
 
             # Mock the CLI execution
-            from moff_cli.cli import cmd_check
             from argparse import Namespace
+
+            from moff_cli.cli import cmd_check
 
             args = Namespace(
                 save=True,
@@ -356,8 +355,9 @@ class TestSaveIntegrationWithCLI:
 
     def test_save_preserves_exit_code(self):
         """Test that saving doesn't affect exit code logic."""
-        from moff_cli.cli import cmd_check
         from argparse import Namespace
+
+        from moff_cli.cli import cmd_check
 
         # Test with save=True and no errors
         with TemporaryDirectory() as tmpdir1:

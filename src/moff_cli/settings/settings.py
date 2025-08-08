@@ -6,10 +6,10 @@ settings.json file if none exists.
 """
 
 import json
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 
 class LocationConstraint(str, Enum):
@@ -39,7 +39,7 @@ class HeaderRule:
     text: str
     match: HeaderMatch = HeaderMatch.EXACT
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "level": self.level,
@@ -48,7 +48,7 @@ class HeaderRule:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "HeaderRule":
+    def from_dict(cls, data: dict[str, Any]) -> "HeaderRule":
         """Create from dictionary representation."""
         return cls(
             level=data["level"],
@@ -60,15 +60,15 @@ class HeaderRule:
 @dataclass
 class PrefixConfig:
     """Configuration for a markdown file prefix."""
-    filename_pattern: Optional[str] = None
+    filename_pattern: str | None = None
     location: LocationConstraint = LocationConstraint.ANY
-    frontmatter_required: Dict[str, str] = field(default_factory=dict)
-    frontmatter_optional: Dict[str, str] = field(default_factory=dict)
-    headers_required: List[HeaderRule] = field(default_factory=list)
-    headers_optional: List[HeaderRule] = field(default_factory=list)
+    frontmatter_required: dict[str, str] = field(default_factory=dict)
+    frontmatter_optional: dict[str, str] = field(default_factory=dict)
+    headers_required: list[HeaderRule] = field(default_factory=list)
+    headers_optional: list[HeaderRule] = field(default_factory=list)
     headers_order: HeaderOrder = HeaderOrder.IN_ORDER
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         result = {
             "location": self.location.value,
@@ -87,7 +87,7 @@ class PrefixConfig:
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], prefix_name: str) -> "PrefixConfig":
+    def from_dict(cls, data: dict[str, Any], prefix_name: str) -> "PrefixConfig":
         """Create from dictionary representation."""
         filename_data = data.get("filename", {})
         pattern = filename_data.get("pattern")
@@ -117,14 +117,14 @@ class RootConfig:
     """Configuration for root directory detection."""
     detect_method: str = "project_file"
     detect_pattern: str = "project_*.md"
-    override_path: Optional[str] = None
-    ignore_patterns: List[str] = field(default_factory=lambda: [
+    override_path: str | None = None
+    ignore_patterns: list[str] = field(default_factory=lambda: [
         "**/.git/**",
         "**/.venv/**",
         "**/node_modules/**"
     ])
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "detect": {
@@ -136,7 +136,7 @@ class RootConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RootConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "RootConfig":
         """Create from dictionary representation."""
         detect = data.get("detect", {})
         return cls(
@@ -156,7 +156,7 @@ class Settings:
 
     DEFAULT_VERSION = 1
 
-    def __init__(self, settings_path: Optional[Path] = None):
+    def __init__(self, settings_path: Path | None = None):
         """Initialize settings from file or defaults.
 
         Args:
@@ -164,7 +164,7 @@ class Settings:
         """
         self.version = self.DEFAULT_VERSION
         self.root = RootConfig()
-        self.prefixes: Dict[str, PrefixConfig] = {}
+        self.prefixes: dict[str, PrefixConfig] = {}
 
         if settings_path and settings_path.exists():
             self._load_from_file(settings_path)
@@ -228,7 +228,7 @@ class Settings:
         Args:
             settings_path: Path to settings.json file.
         """
-        with open(settings_path, 'r') as f:
+        with open(settings_path) as f:
             data = json.load(f)
 
         self.version = data.get("version", self.DEFAULT_VERSION)
@@ -259,7 +259,7 @@ class Settings:
             # Use all defaults
             self._load_defaults()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert settings to dictionary representation."""
         return {
             "version": self.version,
@@ -295,7 +295,7 @@ class Settings:
             settings.save_to_file(settings_path)
         return settings_path
 
-    def get_prefix_config(self, prefix: str) -> Optional[PrefixConfig]:
+    def get_prefix_config(self, prefix: str) -> PrefixConfig | None:
         """Get configuration for a specific prefix.
 
         Args:
@@ -306,7 +306,7 @@ class Settings:
         """
         return self.prefixes.get(prefix)
 
-    def get_all_prefixes(self) -> List[str]:
+    def get_all_prefixes(self) -> list[str]:
         """Get list of all configured prefixes.
 
         Returns:
