@@ -1,17 +1,71 @@
 [project]
 name = "moff-cli"
 version = "0.1.0"
-description = "Add your description here"
+description = "MOFF - Markdown Organization and Format Framework. A CLI tool for validating documentation structure."
 readme = "README.md"
 authors = [
     { name = "Lennart Pollvogt", email = "lennartpollvogt@protonmail.com" },
 ]
+license = { text = "MIT" }
 requires-python = ">=3.12"
-dependencies = [
-    "markdown-to-data>=2.0.0",
-    "rich>=14.1.0",
+keywords = ["documentation", "markdown", "validation", "cli", "linting"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Environment :: Console",
 ]
+dependencies = ["markdown-to-data>=2.0.0", "rich>=14.1.0"]
+
+[project.urls]
+Homepage = "https://github.com/lennartpollvogt/moff-cli"
+Documentation = "https://github.com/lennartpollvogt/moff-cli#readme"
+Repository = "https://github.com/lennartpollvogt/moff-cli"
+Issues = "https://github.com/lennartpollvogt/moff-cli/issues"
+
+[project.scripts]
+moff = "moff_cli.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "black>=23.0.0", "ruff>=0.1.0"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/moff_cli"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = []
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-v --tb=short"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]

@@ -15,7 +15,7 @@ The settings feature provides configuration management for `moff-cli`, handling 
 - `typing` - for type hints and data structures
 - `json` (standard library) - for additional JSON operations if needed
 
-## Implementation Details
+# Implementation Details
 
 ## Settings Loading Pipeline
 
@@ -27,28 +27,28 @@ def load_settings(root_directory: Path) -> Settings:
     Load settings with pydantic validation and automatic merging.
     """
     settings_path = root_directory / "settings.json"
-    
+
     # 1. Get defaults
     default_settings = get_default_settings()
-    
+
     # 2. Check if user settings exist
     if not settings_path.exists():
         # Create default settings.json on first run
         write_settings_file(settings_path, default_settings)
         return default_settings
-    
+
     # 3. Load user settings with pydantic validation
     try:
         user_data = read_settings_file(settings_path)
-        
+
         # Merge with defaults
         effective_settings = merge_settings(default_settings, user_data)
-        
+
         # Additional business logic validation if needed
         validate_settings_business_logic(effective_settings)
-        
+
         return effective_settings
-        
+
     except ValidationError as e:
         # Pydantic provides detailed, structured error messages
         raise ValueError(f"Invalid settings in {settings_path}:\n{format_validation_errors(e)}")
@@ -85,7 +85,7 @@ class HeaderRule(BaseModel):
     level: int = Field(ge=1, le=6)  # Markdown headers are 1-6
     text: str
     match: Literal["exact", "regex"] = "exact"
-    
+
     @validator('text')
     def validate_regex_if_needed(cls, v, values):
         if values.get('match') == 'regex':
@@ -107,7 +107,7 @@ class FrontmatterConfig(BaseModel):
 
 class FilenameConfig(BaseModel):
     pattern: str  # e.g., "feature_*.md"
-    
+
     @validator('pattern')
     def validate_pattern(cls, v):
         if not v.endswith('.md'):
@@ -124,13 +124,13 @@ class Settings(BaseModel):
     version: int = 1
     root: RootConfig
     prefixes: Dict[str, PrefixConfig]
-    
+
     @validator('version')
     def validate_version(cls, v):
         if v != 1:
             raise ValueError(f"Unsupported settings version: {v}")
         return v
-    
+
     class Config:
         # Allow Path objects to be serialized
         json_encoders = {
@@ -210,16 +210,16 @@ def get_default_settings() -> Settings:
 def merge_settings(defaults: Settings, user_dict: Dict[str, Any]) -> Settings:
     """
     Deep merge user settings with defaults using pydantic's built-in validation.
-    
+
     Pydantic handles the merging automatically through its parsing.
     Missing fields in user_dict will use the defaults from the model.
     """
     # Convert defaults to dict
     defaults_dict = defaults.dict()
-    
+
     # Deep merge the dictionaries
     merged_dict = deep_merge(defaults_dict, user_dict)
-    
+
     # Let pydantic validate and create the merged settings
     try:
         return Settings(**merged_dict)
@@ -230,39 +230,39 @@ def merge_settings(defaults: Settings, user_dict: Dict[str, Any]) -> Settings:
 def deep_merge(base: Dict, override: Dict) -> Dict:
     """
     Recursively merge two dictionaries.
-    
+
     Args:
         base: The base dictionary (defaults)
         override: The dictionary to merge in (user settings)
-    
+
     Returns:
         Merged dictionary
     """
     import copy
     result = copy.deepcopy(base)
-    
+
     for key, value in override.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = deep_merge(result[key], value)
         else:
             result[key] = value
-    
+
     return result
 
 # Alternative: Use pydantic's parse_obj with defaults
 def load_user_settings(user_dict: Dict[str, Any], defaults: Settings) -> Settings:
     """
     Load user settings with defaults fallback.
-    
+
     This approach uses pydantic's schema to handle missing fields.
     """
     # Get defaults as dict
     defaults_dict = defaults.dict()
-    
+
     # Update with user settings (shallow merge for simplicity)
     # For deep merge, use the deep_merge function above
     merged = {**defaults_dict, **user_dict}
-    
+
     # Parse and validate
     return Settings.parse_obj(merged)
 ```
@@ -277,24 +277,24 @@ def load_user_settings(user_dict: Dict[str, Any], defaults: Settings) -> Setting
 def validate_settings_business_logic(settings: Settings) -> None:
     """
     Additional business logic validation beyond pydantic's type checking.
-    
+
     Pydantic handles:
     - Type validation (automatic)
     - Enum/Literal validation (automatic)
     - Field constraints (through Field() definitions)
     - Custom validators (through @validator decorators)
-    
+
     This function adds domain-specific rules if needed.
     """
     # Example: Ensure at least one prefix is defined
     if not settings.prefixes:
         raise ValueError("At least one prefix must be defined")
-    
+
     # Example: Ensure 'project' prefix exists and is root_only
     if 'project' in settings.prefixes:
         if settings.prefixes['project'].location != 'root_only':
             raise ValueError("Project prefix should be root_only")
-    
+
     # Most validation is already handled by pydantic's type system
     # and the validators defined in the models
 ```
@@ -321,7 +321,7 @@ def write_settings_file(path: Path, settings: Settings) -> None:
     try:
         # Pydantic's json() method handles serialization properly
         json_content = settings.json(indent=2, ensure_ascii=False)
-        
+
         with open(path, 'w', encoding='utf-8') as f:
             f.write(json_content)
     except IOError as e:
@@ -330,16 +330,16 @@ def write_settings_file(path: Path, settings: Settings) -> None:
 def load_settings_from_file(path: Path) -> Settings:
     """
     Load and validate settings from JSON file using pydantic.
-    
+
     This combines reading and parsing with validation.
     """
     try:
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
+
         # Pydantic validates during parsing
         return Settings.parse_obj(data)
-        
+
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON in settings file: {e}")
     except ValidationError as e:
