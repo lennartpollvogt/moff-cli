@@ -87,6 +87,7 @@ class Checker:
         """
         self.settings = settings
         self.diagnostics: List[Diagnostic] = []
+        self.total_files_checked: int = 0
 
     def check(self, collected_data: Dict[str, Any]) -> List[Diagnostic]:
         """Perform validation on collected documentation.
@@ -98,6 +99,7 @@ class Checker:
             List of diagnostics found during validation.
         """
         self.diagnostics = []
+        self.total_files_checked = 0
 
         # Check for collection errors
         if collected_data.get("error"):
@@ -122,6 +124,7 @@ class Checker:
                 prefix_config = self.settings.get_prefix_config(prefix_name)
 
                 for file_path, file_data in files.items():
+                    self.total_files_checked += 1
                     self._validate_file(
                         file_path,
                         file_data,
@@ -408,7 +411,7 @@ class Checker:
                                 path=file_path,
                                 prefix=prefix_name,
                                 rule="headers.order",
-                                message=f"Required headers are not in strict order",
+                                message="Required headers are not in strict order",
                                 severity=Severity.ERROR,
                                 line=headers[found_positions[i]]["line"] if found_positions[i] < len(headers) else None
                             )
@@ -424,7 +427,7 @@ class Checker:
                                 path=file_path,
                                 prefix=prefix_name,
                                 rule="headers.order",
-                                message=f"Required headers are not in order",
+                                message="Required headers are not in order",
                                 severity=Severity.ERROR,
                                 line=headers[found_positions[i]]["line"] if found_positions[i] < len(headers) else None
                             )
@@ -444,65 +447,42 @@ class Checker:
         results_path = root_directory / "moff_results.txt"
 
         # Generate timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
         # Count statistics
-        total_files_checked = len(set(d.path for d in diagnostics if d.path))
-        total_errors = sum(1 for d in diagnostics if d.severity == Severity.ERROR)
-        total_warnings = sum(1 for d in diagnostics if d.severity == Severity.WARNING)
-        total_info = sum(1 for d in diagnostics if d.severity == Severity.INFO)
+        total_violations = len(diagnostics)
+        status = "PASSED" if total_violations == 0 else "FAILED"
 
         # Build results content
         lines = [
-            "=" * 60,
-            "MOFF Documentation Check Results",
-            "=" * 60,
-            f"Timestamp: {timestamp}",
-            f"Root Directory: {root_directory}",
+            "moff-cli check results",
+            f"Generated: {timestamp}",
+            f"Root: {root_directory}",
             "",
             "Summary:",
-            "-" * 40,
-            f"Files Checked: {total_files_checked}",
-            f"Errors: {total_errors}",
-            f"Warnings: {total_warnings}",
-            f"Info: {total_info}",
-            "",
+            f"- Files checked: {self.total_files_checked}",
+            f"- Violations: {total_violations}",
+            f"- Status: {status}",
         ]
 
         if diagnostics:
             lines.extend([
-                "Violations:",
-                "-" * 40,
-            ])
-
-            # Group diagnostics by file
-            by_file = {}
-            for diag in diagnostics:
-                file_key = diag.path or "[root]"
-                if file_key not in by_file:
-                    by_file[file_key] = []
-                by_file[file_key].append(diag)
-
-            # Sort files and write diagnostics
-            for file_path in sorted(by_file.keys()):
-                lines.append(f"\n{file_path}:")
-                for diag in by_file[file_path]:
-                    line_info = f" (line {diag.line})" if diag.line else ""
-                    lines.append(f"  [{diag.severity.value}] {diag.rule}: {diag.message}{line_info}")
-        else:
-            lines.extend([
-                "Result: ✓ All checks passed!",
                 "",
-                "No violations found.",
+                "Violations:",
             ])
 
-        lines.extend([
-            "",
-            "=" * 60,
-        ])
+            # Sort diagnostics for deterministic output
+            sorted_diagnostics = sorted(diagnostics, key=lambda d: (d.path, d.line or 0, d.rule))
+
+            for diag in sorted_diagnostics:
+                severity = diag.severity.value.upper()
+                line_info = f":{diag.line}" if diag.line else ""
+                lines.append(
+                    f"[{severity}] {diag.path}{line_info} | {diag.rule} | {diag.message}"
+                )
 
         # Write to file
-        with open(results_path, 'w') as f:
+        with open(results_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
 
         return results_path

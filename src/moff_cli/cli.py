@@ -60,49 +60,49 @@ def cmd_check(args: argparse.Namespace) -> int:
     if not diagnostics:
         console.print("[green]✓ All checks passed![/green]")
         console.print("\nNo validation issues found.")
-        return 0
+    else:
+        # Count by severity
+        errors = [d for d in diagnostics if d.severity == Severity.ERROR]
+        warnings = [d for d in diagnostics if d.severity == Severity.WARNING]
+        info_msgs = [d for d in diagnostics if d.severity == Severity.INFO]
 
-    # Count by severity
-    errors = [d for d in diagnostics if d.severity == Severity.ERROR]
-    warnings = [d for d in diagnostics if d.severity == Severity.WARNING]
-    info_msgs = [d for d in diagnostics if d.severity == Severity.INFO]
+        # Display summary
+        console.print("[bold]Validation Summary:[/bold]")
+        console.print(f"  Files checked: {checker.total_files_checked}")
+        console.print(f"  Total issues: {len(diagnostics)}")
+        if errors:
+            console.print(f"  [red]Errors: {len(errors)}[/red]")
+        if warnings:
+            console.print(f"  [yellow]Warnings: {len(warnings)}[/yellow]")
+        if info_msgs:
+            console.print(f"  [blue]Info: {len(info_msgs)}[/blue]")
 
-    # Display summary
-    console.print("[bold]Validation Summary:[/bold]")
-    console.print(f"  Total issues: {len(diagnostics)}")
-    if errors:
-        console.print(f"  [red]Errors: {len(errors)}[/red]")
-    if warnings:
-        console.print(f"  [yellow]Warnings: {len(warnings)}[/yellow]")
-    if info_msgs:
-        console.print(f"  [blue]Info: {len(info_msgs)}[/blue]")
+        console.print("\n[bold]Issues found:[/bold]")
 
-    console.print("\n[bold]Issues found:[/bold]")
+        # Group diagnostics by file
+        by_file = {}
+        for diag in diagnostics:
+            file_key = diag.path or "[root]"
+            if file_key not in by_file:
+                by_file[file_key] = []
+            by_file[file_key].append(diag)
 
-    # Group diagnostics by file
-    by_file = {}
-    for diag in diagnostics:
-        file_key = diag.path or "[root]"
-        if file_key not in by_file:
-            by_file[file_key] = []
-        by_file[file_key].append(diag)
+        # Display diagnostics
+        for file_path in sorted(by_file.keys()):
+            console.print(f"\n[cyan]{file_path}:[/cyan]")
+            for diag in by_file[file_path]:
+                severity_color = {
+                    Severity.ERROR: "red",
+                    Severity.WARNING: "yellow",
+                    Severity.INFO: "blue"
+                }.get(diag.severity, "white")
 
-    # Display diagnostics
-    for file_path in sorted(by_file.keys()):
-        console.print(f"\n[cyan]{file_path}:[/cyan]")
-        for diag in by_file[file_path]:
-            severity_color = {
-                Severity.ERROR: "red",
-                Severity.WARNING: "yellow",
-                Severity.INFO: "blue"
-            }.get(diag.severity, "white")
-
-            line_info = f" [dim](line {diag.line})[/dim]" if diag.line else ""
-            prefix_info = f" [{diag.prefix}]" if diag.prefix else ""
-            console.print(
-                f"  [{severity_color}]{diag.severity.value}[/{severity_color}]{prefix_info} "
-                f"{diag.rule}: {diag.message}{line_info}"
-            )
+                line_info = f" [dim](line {diag.line})[/dim]" if diag.line else ""
+                prefix_info = f" [{diag.prefix}]" if diag.prefix else ""
+                console.print(
+                    f"  [{severity_color}]{diag.severity.value}[/{severity_color}]{prefix_info} "
+                    f"{diag.rule}: {diag.message}{line_info}"
+                )
 
     # Save results if requested
     if args.save:
