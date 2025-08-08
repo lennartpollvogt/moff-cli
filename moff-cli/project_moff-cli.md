@@ -14,33 +14,41 @@ This folder directory is the specification of the `moff-cli` application. It pro
 
 The settings feature allows the user to configure the application's behavior in a JSON file with the name `settings.json`. Possible settings are:
 
-- file prefixes for allowed files
-  - within root directory
-  - within subdirectories
-- for each prefix the file structure, like...
-  - metadata
-  - headers, their level and order
-- documentation guildlines (text for the LLM)
+- root detection method and override path
+- ignore patterns for directories/files to skip
+- file prefixes and their validation rules:
+  - filename patterns (e.g., `project_*.md`)
+  - location constraints (`root_only`, `subdirs_only`, `any`)
+  - required and optional frontmatter fields with types
+  - required and optional headers with level and text matching
+  - header order enforcement (`strict`, `in-order`, `any`)
 
-If no `settings.json` exists in the root directory, the defaults - based on this documentation - are used.
+If no `settings.json` exists, the defaults are used. The CLI creates a default `settings.json` on first run if not already present.
 
 > Feature file: `settings/feature_settings.md`
 
 ## collector
 
-Detects all markdown files - starting from the root directory - and collects their content (metadata, structure, etc.). The `collector` feature is the leading process for the `check` and `tree` commands.
-The `collector` feature returns a list of all markdown files and their content in a python dictionary, by making use of the `markdown-to-data` library.
+Discovers the documentation root (via `project_*.md` or override), traverses the directory tree while respecting ignore patterns, and collects all markdown files matching configured prefixes. The `collector` feature is the foundation for the `check` and `tree` commands.
+
+The collector parses each file using the `markdown-to-data` library and returns a structured dictionary containing the root directory, metadata about root detection, and grouped files by prefix with their parsed content and location annotations.
 
 > Feature file: `collector/feature_collector.md`
 
 ## tree
 
-The tree feature is a command
+The tree feature (`moff tree` command) displays the documentation structure as a tree in the terminal, showing only directories and markdown files. It can optionally highlight inconsistencies detected by the `check` feature, helping visualize the documentation organization.
 
 > Feature file: `tree/feature_tree.md`
 
 ## check
 
-The `check` feature is also the main command for the `moff-cli` application. It verifies the structure of the documentation's directory and the content of the files based on the configuration in the `settings.json` file.
+The `check` feature is the main command for the `moff-cli` application. It validates the collected documentation against the rules in `settings.json`, checking location constraints, frontmatter schemas, and required headers. Results are printed to the terminal and can be saved to `moff_results.txt` via the `save` sub-feature.
 
-Example usage: `moff check`
+Example usage: `moff check` or `moff check --save`
+
+### save
+
+Sub-feature of `check` that persists validation results to `moff_results.txt` in the documentation root, including timestamp, summary statistics, and detailed violation list.
+
+> Feature file: `check/save/feature_save.md`
