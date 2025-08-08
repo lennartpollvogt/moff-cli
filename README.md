@@ -178,6 +178,135 @@ Summary:
 ✓ All files passed validation!
 ```
 
+## 🐍 Programmatic Usage
+
+When installed via pip, `moff-cli` can also be used as a Python library. Import it as `moff_cli`:
+
+### Basic Validation
+
+```python
+from pathlib import Path
+from moff_cli import Settings, Collector, Checker
+
+# Load settings and collect documentation
+settings = Settings()
+collector = Collector(settings, start_path=Path.cwd())
+collected_data = collector.collect()
+
+# Run validation
+checker = Checker(settings)
+diagnostics = checker.check(collected_data)
+
+# Process results
+if not diagnostics:
+    print("✓ All documentation is valid!")
+else:
+    for diag in diagnostics:
+        print(f"{diag.path}: {diag.message}")
+```
+
+### Custom Configuration
+
+```python
+from moff_cli import (
+    Settings,
+    PrefixConfig,
+    LocationConstraint,
+    HeaderRule,
+    HeaderMatch
+)
+
+# Create custom settings
+settings = Settings()
+
+# Add a custom prefix for API documentation
+settings.prefixes["api"] = PrefixConfig(
+    filename_pattern="api_*.md",
+    location=LocationConstraint.SUBDIRS_ONLY,
+    frontmatter_required={
+        "endpoint": "string",
+        "method": "string",
+        "version": "string"
+    },
+    headers_required=[
+        HeaderRule(level=1, text="Endpoint"),
+        HeaderRule(level=2, text="Request"),
+        HeaderRule(level=2, text="Response"),
+    ]
+)
+
+# Save custom settings
+settings.save_to_file(Path("settings.json"))
+```
+
+### Tree Visualization
+
+```python
+from moff_cli import Settings, Collector, Checker, TreeVisualizer
+from rich.console import Console
+
+console = Console()
+settings = Settings()
+
+# Collect and check
+collector = Collector(settings)
+collected_data = collector.collect()
+checker = Checker(settings)
+diagnostics = checker.check(collected_data)
+
+# Display tree with error highlighting
+visualizer = TreeVisualizer(settings, console)
+visualizer.show_tree(collected_data, diagnostics)
+```
+
+### CI/CD Integration
+
+```python
+from pathlib import Path
+from moff_cli import Settings, Collector, Checker, Severity
+
+def validate_docs(project_path: Path) -> bool:
+    """Validate documentation for CI/CD pipeline."""
+    settings = Settings()
+    collector = Collector(settings, start_path=project_path)
+    checker = Checker(settings)
+
+    # Collect and check
+    collected = collector.collect()
+    if collected.get("error"):
+        print(f"ERROR: {collected['error']}")
+        return False
+
+    diagnostics = checker.check(collected)
+
+    # Filter to only errors (ignore warnings)
+    errors = [d for d in diagnostics if d.severity == Severity.ERROR]
+
+    if errors:
+        print(f"Validation failed with {len(errors)} errors")
+        for error in errors:
+            print(f"  ✗ {error.path}: {error.message}")
+        return False
+
+    return True
+
+# Use in CI/CD
+if not validate_docs(Path(".")):
+    exit(1)
+```
+
+### Available Classes and Functions
+
+- `Settings`: Configuration management
+- `Collector`: File discovery and parsing
+- `Checker`: Validation engine
+- `TreeVisualizer`: Tree visualization
+- `Diagnostic`: Validation issue representation
+- `Severity`: Error, Warning, Info levels
+- `LocationConstraint`: ROOT_ONLY, SUBDIRS_ONLY, ANY
+- `HeaderOrder`: STRICT, IN_ORDER, ANY
+- `HeaderMatch`: EXACT, REGEX
+
 ## ⚙️ Configuration
 
 MOFF uses `settings.json` for configuration. The default configuration supports three document prefixes:
@@ -275,77 +404,6 @@ MOFF uses `settings.json` for configuration. The default configuration supports 
 - `"in-order"`: Headers must be in order but others can appear between
 - `"any"`: No order enforcement
 
-## 🔧 Development
-
-### Setting Up Development Environment
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/moff-cli.git
-cd moff-cli
-
-# Install with development dependencies
-uv add --dev pytest black ruff
-
-# Run tests
-uv run pytest tests/ -v
-
-# Run the CLI in development
-uv run python -m moff_cli --help
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=moff_cli
-
-# Run specific test module
-pytest tests/test_moff_cli.py::TestSettings
-```
-
-### Project Structure
-
-```
-moff-cli/
-├── src/
-│   └── moff_cli/
-│       ├── __init__.py
-│       ├── __main__.py
-│       ├── __version__.py
-│       ├── cli.py              # CLI interface
-│       ├── settings/            # Configuration management
-│       ├── collector/           # File discovery and parsing
-│       ├── check/              # Validation engine
-│       └── tree/               # Tree visualization
-├── tests/
-│   └── test_moff_cli.py       # Test suite
-├── moff-cli/                   # Documentation specs
-│   └── project_moff-cli.md    # Project documentation
-├── pyproject.toml
-└── README.md
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow PEP 8 style guide
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting PR
-
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -355,17 +413,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with [Rich](https://github.com/Textualize/rich) for beautiful terminal output
 - Uses [markdown-to-data](https://github.com/yourusername/markdown-to-data) for parsing
 - Inspired by the need for better documentation tooling in AI-assisted development
-
-## 🐛 Known Issues
-
-- Some tech documentation files may need header level adjustments to comply with default rules
-- Large documentation sets (>1000 files) may take a few seconds to process
-
-## 📮 Support
-
-- GitHub Issues: [github.com/yourusername/moff-cli/issues](https://github.com/yourusername/moff-cli/issues)
-- Email: lennartpollvogt@protonmail.com
-
----
-
-Made with ❤️ for better documentation
