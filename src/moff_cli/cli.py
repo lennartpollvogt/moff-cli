@@ -75,7 +75,8 @@ def cmd_check(args: argparse.Namespace) -> int:
         root_directory=root_dir,
         use_colors=True,  # We'll add colors manually for terminal
         include_header=False,  # Don't include header for terminal output
-        include_summary=True
+        include_summary=True,
+        verbose=args.verbose  # Pass verbose flag for expected structure templates
     )
 
     # Print formatted output with appropriate colors
@@ -105,13 +106,25 @@ def cmd_check(args: argparse.Namespace) -> int:
         elif line.startswith("  info"):
             # Info diagnostic
             console.print(f"  [blue]info[/blue]{line[6:]}")
+        elif line.startswith("  Expected structure"):
+            # Expected structure header for verbose mode
+            console.print(f"\n  [dim italic]{line}[/dim italic]")
+        elif args.verbose and line.startswith("  ---"):
+            # Frontmatter delimiters in verbose mode
+            console.print(f"  [dim]{line}[/dim]")
+        elif args.verbose and line.startswith("  #"):
+            # Headers in verbose mode
+            console.print(f"  [dim]{line}[/dim]")
+        elif args.verbose and line.startswith("  ") and ":" in line and not line.strip().startswith(("error", "warning", "info")):
+            # Frontmatter fields in verbose mode
+            console.print(f"  [dim]{line}[/dim]")
         else:
             console.print(line)
 
     # Save results if requested
     if args.save:
         console.print("\n[yellow]Saving results...[/yellow]")
-        results_path = checker.save_results(root_dir, diagnostics)
+        results_path = checker.save_results(root_dir, diagnostics, verbose=args.verbose)
         console.print(f"[green]Results saved to: {results_path}[/green]")
 
     # Return appropriate exit code

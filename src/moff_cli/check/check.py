@@ -433,13 +433,68 @@ class Checker:
                         )
                         break
 
+    def generate_expected_structure(self, prefix_name: str) -> list[str]:
+        """Generate expected structure template for a given prefix.
+
+        Args:
+            prefix_name: The prefix name (e.g., 'feature', 'tech', 'project')
+
+        Returns:
+            List of lines showing the expected structure.
+        """
+        lines = []
+        prefix_config = self.settings.get_prefix_config(prefix_name)
+
+        if not prefix_config:
+            return lines
+
+        # Generate frontmatter template
+        has_frontmatter = prefix_config.frontmatter_required or prefix_config.frontmatter_optional
+        if has_frontmatter:
+            lines.append("---")
+
+            # Add required fields
+            for field, field_type in prefix_config.frontmatter_required.items():
+                if field_type == "string":
+                    lines.append(f"{field}: ")
+                elif field_type == "list":
+                    lines.append(f"{field}: []")
+                else:
+                    lines.append(f"{field}: ")
+
+            # Add optional fields
+            for field, field_type in prefix_config.frontmatter_optional.items():
+                # Skip comment fields
+                if field.startswith("_"):
+                    continue
+                if field_type == "string":
+                    lines.append(f"{field}: ")
+                elif field_type == "list":
+                    lines.append(f"{field}: []")
+                else:
+                    lines.append(f"{field}: ")
+
+            lines.append("---")
+            lines.append("")
+
+        # Generate headers template
+        if prefix_config.headers_required:
+            for header in prefix_config.headers_required:
+                level = header.level
+                text = header.text
+                lines.append(f"{'#' * level} {text}")
+                lines.append("")
+
+        return lines
+
     def format_diagnostics(
         self,
         diagnostics: list[Diagnostic],
         root_directory: Path | None = None,
         use_colors: bool = False,
         include_header: bool = False,
-        include_summary: bool = True
+        include_summary: bool = True,
+        verbose: bool = False
     ) -> list[str]:
         """Format diagnostics in a human-readable grouped format.
 
@@ -449,6 +504,7 @@ class Checker:
             use_colors: Whether to include color codes (for terminal).
             include_header: Whether to include header with timestamp.
             include_summary: Whether to include summary statistics.
+            verbose: Whether to include expected structure templates for files with errors.
 
         Returns:
             List of formatted strings (lines).
@@ -519,14 +575,27 @@ class Checker:
                     diag_line = f"  {severity}  {diag.rule}: {diag.message}{line_info}"
                     lines.append(diag_line)
 
+                # Add expected structure in verbose mode
+                if verbose and by_file[file_path]:
+                    # Get the prefix from the first diagnostic of this file
+                    first_diag = by_file[file_path][0]
+                    if first_diag.prefix:
+                        expected_structure = self.generate_expected_structure(first_diag.prefix)
+                        if expected_structure:
+                            lines.append("")
+                            lines.append(f"  Expected structure for this file type ({first_diag.prefix}):")
+                            for struct_line in expected_structure:
+                                lines.append(f"  {struct_line}")
+
         return lines
 
-    def save_results(self, root_directory: Path, diagnostics: list[Diagnostic]) -> Path:
+    def save_results(self, root_directory: Path, diagnostics: list[Diagnostic], verbose: bool = False) -> Path:
         """Save validation results to moff_results.txt.
 
         Args:
             root_directory: Root directory where to save the results file.
             diagnostics: List of diagnostics to save.
+            verbose: Whether to include expected structure templates for files with errors.
 
         Returns:
             Path to the saved results file.
@@ -539,7 +608,8 @@ class Checker:
             root_directory=root_directory,
             use_colors=False,  # No colors in file output
             include_header=True,
-            include_summary=True
+            include_summary=True,
+            verbose=verbose  # Pass verbose flag for expected structure templates
         )
 
         # Write to file
