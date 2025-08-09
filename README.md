@@ -16,7 +16,7 @@ MOFF helps maintain consistent documentation structure across projects by:
 - Ensuring headers follow specified patterns and order
 - Providing visual feedback through tree visualization
 
-Perfect for projects where documentation quality and consistency matter, especially when working with AI assistants that parse markdown documentation.
+Perfect for projects where documentation quality and consistency matter, especially when working with AI assistants that write markdown documentation.
 
 ## ✨ Features
 
