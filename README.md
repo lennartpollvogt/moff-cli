@@ -1,6 +1,6 @@
 # MOFF CLI
 
-**M**arkdown **O**rganization and **F**ormat **F**ormatter
+**M**arkdown **O**pinionated and **F**ile **F**ormatter
 
 A command-line tool for validating and maintaining clean, organized documentation. Designed to work seamlessly with Large Language Models (LLMs) in modern IDEs like Cursor, VSCode, and Zed.
 
