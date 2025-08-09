@@ -11,7 +11,7 @@ from pathlib import Path
 from rich.console import Console
 
 from .__version__ import __version__
-from .check import Checker, Severity
+from .check import Checker
 from .collector import Collector
 from .settings import Settings
 from .tree import TreeVisualizer

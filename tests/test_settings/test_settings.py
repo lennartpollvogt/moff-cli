@@ -348,7 +348,7 @@ class TestPrefixConfig:
         assert restored.headers_order == original.headers_order
 
         # Verify header rules match
-        for orig_header, restored_header in zip(original.headers_required, restored.headers_required):
+        for orig_header, restored_header in zip(original.headers_required, restored.headers_required, strict=False):
             assert orig_header.level == restored_header.level
             assert orig_header.text == restored_header.text
             assert orig_header.match == restored_header.match

@@ -1,14 +1,11 @@
 """Tests for moff-cli modules."""
 
-import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from moff_cli.check import Checker, Severity
 from moff_cli.collector import Collector
-from moff_cli.settings import LocationConstraint, Settings
-
-
+from moff_cli.settings import Settings
 
 
 class TestCollector:

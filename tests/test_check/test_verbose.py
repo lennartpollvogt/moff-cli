@@ -2,9 +2,8 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import MagicMock, patch
 
-from moff_cli.check import Checker, Diagnostic, Severity
+from moff_cli.check import Checker
 from moff_cli.collector import Collector
 from moff_cli.settings import Settings
 
@@ -332,9 +331,10 @@ class TestVerboseMode:
 
     def test_cli_integration_with_verbose(self):
         """Test CLI integration with verbose flag."""
+        import sys
         from argparse import Namespace
         from io import StringIO
-        import sys
+
         from moff_cli.cli import cmd_check
 
         with TemporaryDirectory() as tmpdir:
