@@ -26,6 +26,7 @@ Perfect for projects where documentation quality and consistency matter, especia
 - **⚙️ Configurable Rules**: Define custom prefixes, patterns, and validation rules
 - **💾 Result Persistence**: Save validation results for CI/CD integration
 - **🎨 Rich Terminal Output**: Beautiful, colored output using Rich library
+- **📚 Verbose Mode**: Shows expected file structure templates when validation fails
 
 ## 📦 Installation
 
@@ -62,7 +63,9 @@ moff --help                    # Show help information
 moff --version                 # Show version
 
 moff check                     # Run validation checks
+moff check --verbose          # Show expected structure for files with errors
 moff check --save             # Run checks and save results to moff_results.txt
+moff check --save --verbose   # Save results with expected structure templates
 moff check --path ./docs      # Check specific directory
 
 moff tree                      # Display documentation tree
@@ -137,6 +140,25 @@ features/feature_broken.md:
 
 tech_database.md:
   error [tech] location.subdirs_only: File must be in a subdirectory, not in root
+```
+
+Or with verbose mode to see expected structure:
+```
+features/feature_broken.md:
+  error [feature] frontmatter.missing: Required frontmatter is missing (line 1)
+  error [feature] headers.missing: Missing required header level=1 text='Overview'
+  error [feature] headers.missing: Missing required header level=2 text='Requirements'
+
+  Expected structure for this file type (feature):
+  ---
+  project: 
+  feature: 
+  linked_features: []
+  ---
+  
+  # Overview
+  
+  ## Requirements
 ```
 
 #### Tree Command

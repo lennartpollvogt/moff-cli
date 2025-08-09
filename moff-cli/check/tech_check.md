@@ -443,12 +443,181 @@ def validate_header_order(indices: List[int], order_mode: str) -> bool:
     return True
 ```
 
+## Template Generation
+
+```python
+def generate_expected_structure(prefix_name: str, settings: Settings) -> List[str]:
+    """
+    Generate expected structure template for a given prefix.
+    
+    Args:
+        prefix_name: The prefix name (e.g., 'feature', 'tech', 'project')
+        settings: Settings object containing prefix configurations
+    
+    Returns:
+        List of lines showing the expected structure
+    
+    Example:
+        >>> lines = generate_expected_structure("feature", settings)
+        >>> print("\n".join(lines))
+        ---
+        project: 
+        feature: 
+        linked_features: []
+        ---
+        
+        # Overview
+        
+        ## Requirements
+    """
+    lines = []
+    prefix_config = settings.get_prefix_config(prefix_name)
+    
+    if not prefix_config:
+        return lines
+    
+    # Generate frontmatter template
+    if prefix_config.frontmatter_required or prefix_config.frontmatter_optional:
+        lines.append("---")
+        
+        # Add required fields
+        for field, field_type in prefix_config.frontmatter_required.items():
+            if field_type == "string":
+                lines.append(f"{field}: ")
+            elif field_type == "list":
+                lines.append(f"{field}: []")
+            else:
+                lines.append(f"{field}: ")
+        
+        # Add optional fields
+        for field, field_type in prefix_config.frontmatter_optional.items():
+            if not field.startswith("_"):  # Skip comment fields
+                if field_type == "string":
+                    lines.append(f"{field}: ")
+                elif field_type == "list":
+                    lines.append(f"{field}: []")
+                else:
+                    lines.append(f"{field}: ")
+        
+        lines.append("---")
+        lines.append("")
+    
+    # Generate headers template
+    if prefix_config.headers_required:
+        for header in prefix_config.headers_required:
+            level = header.level
+            text = header.text
+            lines.append(f"{'#' * level} {text}")
+            lines.append("")
+    
+    return lines
+```
+
 ## Output Formatting
 
 ```python
 from rich.console import Console
 from rich.table import Table
+from typing import List, Optional
 from rich.panel import Panel
+
+def format_diagnostics(
+    diagnostics: List[Diagnostic],
+    root_directory: Optional[Path] = None,
+    use_colors: bool = False,
+    include_header: bool = False,
+    include_summary: bool = True,
+    verbose: bool = False,
+    settings: Optional[Settings] = None
+) -> List[str]:
+    """
+    Format diagnostics in a human-readable grouped format.
+    
+    Args:
+        diagnostics: List of diagnostics to format
+        root_directory: Root directory path (for header)
+        use_colors: Whether to include color codes (for terminal)
+        include_header: Whether to include header with timestamp
+        include_summary: Whether to include summary statistics
+        verbose: Whether to include expected structure templates for files with errors
+        settings: Settings object needed for generating templates in verbose mode
+    
+    Returns:
+        List of formatted strings (lines)
+    
+    Example output (verbose mode):
+        features/feature_broken.md:
+          error  headers.missing: Missing required header level=1 text='Overview'
+          error  frontmatter.missing: Required frontmatter is missing (line 1)
+          
+          Expected structure for this file type (feature):
+          ---
+          project: 
+          feature: 
+          ---
+          
+          # Overview
+    """
+    lines = []
+    
+    # Add header if requested
+    if include_header:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+        lines.extend([
+            "moff-cli check results",
+            f"Generated: {timestamp}",
+        ])
+        if root_directory:
+            lines.append(f"Root: {root_directory}")
+        lines.append("")
+    
+    # Add summary section
+    if include_summary:
+        # ... summary formatting code ...
+        pass
+    
+    # Group diagnostics by file
+    by_file = {}
+    for diag in diagnostics:
+        file_key = diag.path or "[root]"
+        if file_key not in by_file:
+            by_file[file_key] = []
+        by_file[file_key].append(diag)
+    
+    # Format grouped diagnostics
+    if by_file:
+        lines.append("")
+        lines.append("Issues found:")
+        
+        for file_path in sorted(by_file.keys()):
+            lines.append("")
+            lines.append(f"{file_path}:")
+            
+            # Sort diagnostics within each file
+            file_diags = sorted(by_file[file_path], 
+                              key=lambda d: (d.line or 0, d.rule))
+            
+            for diag in file_diags:
+                severity = diag.severity
+                line_info = f" (line {diag.line})" if diag.line else ""
+                diag_line = f"  {severity}  {diag.rule}: {diag.message}{line_info}"
+                lines.append(diag_line)
+            
+            # Add expected structure in verbose mode
+            if verbose and settings and by_file[file_path]:
+                # Get the prefix from the first diagnostic of this file
+                first_diag = by_file[file_path][0]
+                if first_diag.prefix:
+                    expected_structure = generate_expected_structure(
+                        first_diag.prefix, settings
+                    )
+                    if expected_structure:
+                        lines.append("")
+                        lines.append(f"  Expected structure for this file type ({first_diag.prefix}):")
+                        for struct_line in expected_structure:
+                            lines.append(f"  {struct_line}")
+    
+    return lines
 
 def display_results(result: ValidationResult) -> None:
     """Display validation results in the terminal"""
@@ -523,6 +692,7 @@ def check_command(
         path: Optional path to documentation root
         save: Whether to save results to moff_results.txt
         quiet: Suppress terminal output
+        verbose: Whether to show expected structure templates for files with errors
     
     Returns:
         Exit code (0 for success, non-zero for failures)
@@ -553,7 +723,7 @@ def check_command(
     # Save if requested
     if save:
         from moff_cli.save import save_results
-        save_results(result, root_dir)
+        save_results(result, root_dir, verbose=verbose)
         if not quiet:
             console = Console()
             console.print(f"\n[green]Results saved to {root_dir}/moff_results.txt[/green]")

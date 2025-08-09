@@ -11,7 +11,7 @@ The `check` feature validates the documentation set collected by the `collector`
 - frontmatter (metadata) conforms to the configured schema,
 - required headers are present with correct levels and in the correct order.
 
-It prints results into the terminal and can save them into `moff_results.txt` in the documentation root (via the `save` feature).
+It prints results into the terminal and can save them into `moff_results.txt` in the documentation root (via the `save` feature). When run with `--verbose` flag, it also displays expected structure templates for files with validation errors, helping users understand exactly what format is required.
 
 ## Inputs
 
@@ -72,6 +72,13 @@ It prints results into the terminal and can save them into `moff_results.txt` in
     - rule category (root, location, frontmatter, headers)
     - a concise message
     - optional line hint (for headers, use the line of the matched/missing header when possible)
+  - In verbose mode (`--verbose` flag):
+    - After listing violations for each file
+    - Display "Expected structure for this file type (prefix):"
+    - Show a template with:
+      - Required and optional frontmatter fields with appropriate types
+      - Required headers with correct levels and text
+    - Template is only shown for files that have validation errors
   - Provide a summary:
     - total files checked
     - total violations
@@ -125,3 +132,4 @@ The `check` feature can internally represent its findings as a list of diagnosti
 - print violations to the terminal with a summary
 - return a non-zero exit code when violations exist
 - support saving results via the `save` feature (`moff_results.txt` at the root directory)
+- support verbose mode (`--verbose`) to display expected structure templates for files with errors
