@@ -1,6 +1,6 @@
 # MOFF CLI
 
-**M**arkdown **O**pinionated and **F**ile **F**ormatter
+**M**arkdown **O**pinionated **F**ile **F**ormatter
 
 A command-line tool for validating and maintaining clean, organized documentation. Designed to work seamlessly with Large Language Models (LLMs) in modern IDEs like Cursor, VSCode, and Zed.
 
@@ -151,13 +151,13 @@ features/feature_broken.md:
 
   Expected structure for this file type (feature):
   ---
-  project: 
-  feature: 
+  project:
+  feature:
   linked_features: []
   ---
-  
+
   # Overview
-  
+
   ## Requirements
 ```
 
