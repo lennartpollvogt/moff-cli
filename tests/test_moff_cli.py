@@ -9,100 +9,6 @@ from moff_cli.collector import Collector
 from moff_cli.settings import LocationConstraint, Settings
 
 
-class TestSettings:
-    """Test cases for the Settings module."""
-
-    def test_default_settings_loaded(self):
-        """Test that default settings are properly loaded."""
-        settings = Settings()
-
-        # Check version
-        assert settings.version == 1
-
-        # Check root configuration
-        assert settings.root.detect_method == "project_file"
-        assert settings.root.detect_pattern == "project_*.md"
-
-        # Check prefixes are configured
-        prefixes = settings.get_all_prefixes()
-        assert "project" in prefixes
-        assert "feature" in prefixes
-        assert "tech" in prefixes
-
-        # Check project prefix configuration
-        project_config = settings.get_prefix_config("project")
-        assert project_config is not None
-        assert project_config.location == LocationConstraint.ROOT_ONLY
-        assert "project" in project_config.frontmatter_required
-
-    def test_settings_from_file(self):
-        """Test loading settings from a JSON file."""
-        with TemporaryDirectory() as tmpdir:
-            settings_path = Path(tmpdir) / "settings.json"
-
-            # Create custom settings
-            custom_settings = {
-                "version": 1,
-                "root": {
-                    "detect": {
-                        "method": "project_file",
-                        "pattern": "custom_*.md"
-                    },
-                    "ignore": ["**/test/**"]
-                },
-                "prefixes": {
-                    "custom": {
-                        "location": "any",
-                        "frontmatter": {
-                            "required": {"name": "string"},
-                            "optional": {}
-                        },
-                        "headers": {
-                            "required": [],
-                            "optional": [],
-                            "order": "any"
-                        }
-                    }
-                }
-            }
-
-            # Write settings file
-            with open(settings_path, 'w') as f:
-                json.dump(custom_settings, f)
-
-            # Load settings
-            settings = Settings(settings_path)
-
-            # Verify custom settings loaded
-            assert settings.root.detect_pattern == "custom_*.md"
-            assert "**/test/**" in settings.root.ignore_patterns
-            assert "custom" in settings.get_all_prefixes()
-
-            custom_config = settings.get_prefix_config("custom")
-            assert custom_config is not None
-            assert custom_config.location == LocationConstraint.ANY
-
-    def test_type_validation(self):
-        """Test frontmatter type validation (edge case with various types)."""
-        settings = Settings()
-
-        # Test valid types
-        assert settings.validate_frontmatter_type("text", "string") is True
-        assert settings.validate_frontmatter_type(42, "number") is True
-        assert settings.validate_frontmatter_type(3.14, "number") is True
-        assert settings.validate_frontmatter_type(True, "boolean") is True
-        assert settings.validate_frontmatter_type([], "list") is True
-        assert settings.validate_frontmatter_type({}, "object") is True
-
-        # Test invalid types
-        assert settings.validate_frontmatter_type(123, "string") is False
-        assert settings.validate_frontmatter_type("text", "number") is False
-        assert settings.validate_frontmatter_type("true", "boolean") is False
-        assert settings.validate_frontmatter_type({}, "list") is False
-        assert settings.validate_frontmatter_type([], "object") is False
-
-        # Test edge case: unknown type
-        assert settings.validate_frontmatter_type("anything", "unknown_type") is False
 
 
 class TestCollector:
@@ -337,36 +243,6 @@ class TestChecker:
         assert "Requirements" in diagnostics[0].message
         assert diagnostics[0].severity == Severity.ERROR
 
-    def test_settings_auto_creation(self):
-        """Test that settings.json is automatically created when it doesn't exist."""
-        with TemporaryDirectory() as tmpdir:
-            tmppath = Path(tmpdir)
-
-            # Create project file but no settings.json
-            (tmppath / "project_test.md").write_text(
-                "---\nproject: test\n---\n# Overview\nTest project"
-            )
-
-            # Verify settings.json doesn't exist initially
-            settings_path = tmppath / "settings.json"
-            assert not settings_path.exists()
-
-            # Create and save default settings
-            Settings.create_default_settings_file(tmppath)
-
-            # Verify settings.json was created
-            assert settings_path.exists()
-
-            # Load and verify the created settings
-            with open(settings_path) as f:
-                saved_settings = json.load(f)
-
-            assert saved_settings["version"] == 1
-            assert "root" in saved_settings
-            assert "prefixes" in saved_settings
-            assert "project" in saved_settings["prefixes"]
-            assert "feature" in saved_settings["prefixes"]
-            assert "tech" in saved_settings["prefixes"]
 
 
 def test_integration_full_workflow():

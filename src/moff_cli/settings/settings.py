@@ -241,22 +241,13 @@ class Settings:
 
         # Load prefix configurations
         if "prefixes" in data:
-            # Start with defaults
-            self._load_defaults()
-            # Override with file settings
+            # Only load prefixes specified in the file (don't merge with defaults)
             for prefix_name, prefix_data in data["prefixes"].items():
-                if prefix_name in self.prefixes:
-                    # Merge with existing defaults
-                    self.prefixes[prefix_name] = PrefixConfig.from_dict(
-                        prefix_data, prefix_name
-                    )
-                else:
-                    # New prefix
-                    self.prefixes[prefix_name] = PrefixConfig.from_dict(
-                        prefix_data, prefix_name
-                    )
+                self.prefixes[prefix_name] = PrefixConfig.from_dict(
+                    prefix_data, prefix_name
+                )
         else:
-            # Use all defaults
+            # Use all defaults when no prefixes are specified
             self._load_defaults()
 
     def to_dict(self) -> dict[str, Any]:
