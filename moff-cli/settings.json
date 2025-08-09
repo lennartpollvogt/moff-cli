@@ -1,32 +1,49 @@
 {
+  "_comment": "MOFF CLI Settings - Documentation validator configuration",
   "version": 1,
   "root": {
+    "_comment": "Configure how MOFF discovers your documentation root directory",
     "detect": {
+      "_comment": "Method for finding documentation root. Currently only 'project_file' is supported",
       "method": "project_file",
-      "pattern": "project_*.md"
+      "pattern": "project_*.md",
+      "_pattern_help": "Glob pattern to identify the root marker file (e.g., 'project_*.md', 'main_*.md')"
     },
     "override_path": null,
+    "_override_path_help": "Set to a specific path to bypass auto-detection (e.g., '/path/to/docs')",
     "ignore": [
       "**/.git/**",
       "**/.venv/**",
       "**/node_modules/**"
-    ]
+    ],
+    "_ignore_help": "Glob patterns for directories/files to exclude from scanning"
   },
   "prefixes": {
+    "_comment": "Define validation rules for different file types based on their prefix",
+    "_help": "Each prefix defines rules for files matching 'prefix_*.md' pattern",
     "project": {
+      "_comment": "Rules for project_*.md files - your main project documentation",
       "location": "root_only",
+      "_location_values": "Options: 'root_only', 'subdirs_only', 'any'",
+      "_location_help": "Where these files must be located relative to documentation root",
       "frontmatter": {
+        "_comment": "YAML frontmatter validation rules",
         "required": {
-          "project": "string"
+          "project": "string",
+          "_types": "Supported types: 'string', 'number', 'boolean', 'list', 'object'"
         },
-        "optional": {}
+        "optional": {
+          "_example": "Add optional fields like: {\"version\": \"string\", \"status\": \"string\"}"
+        }
       },
       "headers": {
+        "_comment": "Markdown header validation rules",
         "required": [
           {
             "level": 1,
             "text": "Overview",
-            "match": "exact"
+            "match": "exact",
+            "_match_values": "Options: 'exact' (must match exactly), 'regex' (text is treated as regex pattern)"
           }
         ],
         "optional": [
@@ -36,13 +53,16 @@
             "match": "exact"
           }
         ],
-        "order": "in-order"
+        "order": "in-order",
+        "_order_values": "Options: 'strict' (exact order), 'in-order' (correct order but gaps allowed), 'any' (no order enforced)"
       },
       "filename": {
-        "pattern": "project_*.md"
+        "pattern": "project_*.md",
+        "_pattern_help": "Glob pattern for matching files of this type"
       }
     },
     "feature": {
+      "_comment": "Rules for feature_*.md files - feature specifications",
       "location": "any",
       "frontmatter": {
         "required": {
@@ -50,7 +70,8 @@
           "feature": "string"
         },
         "optional": {
-          "linked_features": "list"
+          "linked_features": "list",
+          "_list_example": "List values look like: ['feature1', 'feature2']"
         }
       },
       "headers": {
@@ -74,7 +95,9 @@
       }
     },
     "tech": {
+      "_comment": "Rules for tech_*.md files - technical implementation details",
       "location": "subdirs_only",
+      "_location_note": "Tech files must be in subdirectories, not in root",
       "frontmatter": {
         "required": {
           "project": "string"
@@ -98,10 +121,39 @@
           }
         ],
         "optional": [],
-        "order": "in-order"
+        "order": "in-order",
+        "_order_note": "Both level-1 headers must appear but can have other headers between them"
       },
       "filename": {
         "pattern": "tech_*.md"
+      }
+    },
+    "_custom_prefix_example": {
+      "_comment": "Example: Add your own prefix type by copying this structure",
+      "_note": "Rename '_custom_prefix_example' to your prefix name (e.g., 'api', 'docs')",
+      "location": "any",
+      "frontmatter": {
+        "required": {
+          "title": "string"
+        },
+        "optional": {
+          "tags": "list",
+          "deprecated": "boolean"
+        }
+      },
+      "headers": {
+        "required": [
+          {
+            "level": 1,
+            "text": ".*",
+            "match": "regex"
+          }
+        ],
+        "optional": [],
+        "order": "any"
+      },
+      "filename": {
+        "pattern": "custom_*.md"
       }
     }
   }

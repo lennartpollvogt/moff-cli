@@ -50,6 +50,9 @@ class HeaderRule:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "HeaderRule":
         """Create from dictionary representation."""
+        # Filter out comment keys (starting with _)
+        data = {k: v for k, v in data.items() if not k.startswith("_")}
+
         return cls(
             level=data["level"],
             text=data["text"],
@@ -89,13 +92,33 @@ class PrefixConfig:
     @classmethod
     def from_dict(cls, data: dict[str, Any], prefix_name: str) -> "PrefixConfig":
         """Create from dictionary representation."""
+        # Filter out comment keys (starting with _)
+        data = {k: v for k, v in data.items() if not k.startswith("_")}
+
         filename_data = data.get("filename", {})
         pattern = filename_data.get("pattern")
         if pattern is None:
             pattern = f"{prefix_name}_*.md"
 
         frontmatter = data.get("frontmatter", {})
+        # Filter comment keys from nested structures
+        if isinstance(frontmatter.get("required"), dict):
+            frontmatter["required"] = {k: v for k, v in frontmatter["required"].items() if not k.startswith("_")}
+        if isinstance(frontmatter.get("optional"), dict):
+            frontmatter["optional"] = {k: v for k, v in frontmatter.get("optional", {}).items() if not k.startswith("_")}
+
         headers = data.get("headers", {})
+        # Filter comment keys from header lists
+        if "required" in headers and isinstance(headers["required"], list):
+            headers["required"] = [
+                {k: v for k, v in h.items() if not k.startswith("_")}
+                for h in headers["required"]
+            ]
+        if "optional" in headers and isinstance(headers["optional"], list):
+            headers["optional"] = [
+                {k: v for k, v in h.items() if not k.startswith("_")}
+                for h in headers.get("optional", [])
+            ]
 
         return cls(
             filename_pattern=pattern,
@@ -138,7 +161,14 @@ class RootConfig:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "RootConfig":
         """Create from dictionary representation."""
+        # Filter out comment keys (starting with _)
+        data = {k: v for k, v in data.items() if not k.startswith("_")}
+
         detect = data.get("detect", {})
+        # Filter comment keys from detect
+        if isinstance(detect, dict):
+            detect = {k: v for k, v in detect.items() if not k.startswith("_")}
+
         return cls(
             detect_method=detect.get("method", "project_file"),
             detect_pattern=detect.get("pattern", "project_*.md"),
@@ -222,6 +252,152 @@ class Settings:
             headers_order=HeaderOrder.IN_ORDER
         )
 
+    def _create_documented_defaults(self) -> dict[str, Any]:
+        """Create default settings with documentation comments."""
+        return {
+            "_comment": "MOFF CLI Settings - Documentation validator configuration",
+            "version": 1,
+            "root": {
+                "_comment": "Configure how MOFF discovers your documentation root directory",
+                "detect": {
+                    "_comment": "Method for finding documentation root. Currently only 'project_file' is supported",
+                    "method": "project_file",
+                    "pattern": "project_*.md",
+                    "_pattern_help": "Glob pattern to identify the root marker file (e.g., 'project_*.md', 'main_*.md')"
+                },
+                "override_path": None,
+                "_override_path_help": "Set to a specific path to bypass auto-detection (e.g., '/path/to/docs')",
+                "ignore": [
+                    "**/.git/**",
+                    "**/.venv/**",
+                    "**/node_modules/**"
+                ],
+                "_ignore_help": "Glob patterns for directories/files to exclude from scanning"
+            },
+
+            "prefixes": {
+                "_comment": "Define validation rules for different file types based on their prefix",
+                "_help": "Each prefix defines rules for files matching 'prefix_*.md' pattern",
+
+                "project": {
+                    "_comment": "Rules for project_*.md files - your main project documentation",
+                    "location": "root_only",
+                    "_location_values": "Options: 'root_only', 'subdirs_only', 'any'",
+                    "_location_help": "Where these files must be located relative to documentation root",
+
+                    "frontmatter": {
+                        "_comment": "YAML frontmatter validation rules",
+                        "required": {
+                            "project": "string",
+                            "_types": "Supported types: 'string', 'number', 'boolean', 'list', 'object'"
+                        },
+                        "optional": {
+                            "_example": "Add optional fields like: {\"version\": \"string\", \"status\": \"string\"}"
+                        }
+                    },
+
+                    "headers": {
+                        "_comment": "Markdown header validation rules",
+                        "required": [
+                            {
+                                "level": 1,
+                                "text": "Overview",
+                                "match": "exact",
+                                "_match_values": "Options: 'exact' (must match exactly), 'regex' (text is treated as regex pattern)"
+                            }
+                        ],
+                        "optional": [
+                            {
+                                "level": 2,
+                                "text": "Requirements",
+                                "match": "exact"
+                            }
+                        ],
+                        "order": "in-order",
+                        "_order_values": "Options: 'strict' (exact order), 'in-order' (correct order but gaps allowed), 'any' (no order enforced)"
+                    },
+
+                    "filename": {
+                        "pattern": "project_*.md",
+                        "_pattern_help": "Glob pattern for matching files of this type"
+                    }
+                },
+
+                "feature": {
+                    "_comment": "Rules for feature_*.md files - feature specifications",
+                    "location": "any",
+                    "frontmatter": {
+                        "required": {
+                            "project": "string",
+                            "feature": "string"
+                        },
+                        "optional": {
+                            "linked_features": "list",
+                            "_list_example": "List values look like: ['feature1', 'feature2']"
+                        }
+                    },
+                    "headers": {
+                        "required": [
+                            {"level": 1, "text": "Overview", "match": "exact"},
+                            {"level": 2, "text": "Requirements", "match": "exact"}
+                        ],
+                        "optional": [],
+                        "order": "strict"
+                    },
+                    "filename": {
+                        "pattern": "feature_*.md"
+                    }
+                },
+
+                "tech": {
+                    "_comment": "Rules for tech_*.md files - technical implementation details",
+                    "location": "subdirs_only",
+                    "_location_note": "Tech files must be in subdirectories, not in root",
+                    "frontmatter": {
+                        "required": {
+                            "project": "string"
+                        },
+                        "optional": {
+                            "feature": "string",
+                            "linked_features": "list"
+                        }
+                    },
+                    "headers": {
+                        "required": [
+                            {"level": 1, "text": "Technical Details", "match": "exact"},
+                            {"level": 1, "text": "Implementation Details", "match": "exact"}
+                        ],
+                        "optional": [],
+                        "order": "in-order",
+                        "_order_note": "Both level-1 headers must appear but can have other headers between them"
+                    },
+                    "filename": {
+                        "pattern": "tech_*.md"
+                    }
+                },
+
+                "_custom_prefix_example": {
+                    "_comment": "Example: Add your own prefix type by copying this structure",
+                    "_note": "Rename '_custom_prefix_example' to your prefix name (e.g., 'api', 'docs')",
+                    "location": "any",
+                    "frontmatter": {
+                        "required": {"title": "string"},
+                        "optional": {"tags": "list", "deprecated": "boolean"}
+                    },
+                    "headers": {
+                        "required": [
+                            {"level": 1, "text": ".*", "match": "regex"}
+                        ],
+                        "optional": [],
+                        "order": "any"
+                    },
+                    "filename": {
+                        "pattern": "custom_*.md"
+                    }
+                }
+            }
+        }
+
     def _load_from_file(self, settings_path: Path) -> None:
         """Load settings from JSON file.
 
@@ -243,9 +419,11 @@ class Settings:
         if "prefixes" in data:
             # Only load prefixes specified in the file (don't merge with defaults)
             for prefix_name, prefix_data in data["prefixes"].items():
-                self.prefixes[prefix_name] = PrefixConfig.from_dict(
-                    prefix_data, prefix_name
-                )
+                # Skip comment keys (starting with _)
+                if not prefix_name.startswith("_"):
+                    self.prefixes[prefix_name] = PrefixConfig.from_dict(
+                        prefix_data, prefix_name
+                    )
         else:
             # Use all defaults when no prefixes are specified
             self._load_defaults()
@@ -283,7 +461,10 @@ class Settings:
         settings_path = root_dir / "settings.json"
         if not settings_path.exists():
             settings = cls()
-            settings.save_to_file(settings_path)
+            # Use the documented version for initial creation
+            documented_settings = settings._create_documented_defaults()
+            with open(settings_path, 'w') as f:
+                json.dump(documented_settings, f, indent=2)
         return settings_path
 
     def get_prefix_config(self, prefix: str) -> PrefixConfig | None:
