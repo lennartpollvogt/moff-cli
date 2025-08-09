@@ -61,7 +61,7 @@ def save_results(
 ```python
 def format_results(validation_result: ValidationResult) -> str:
     """
-    Format validation results into a human-readable text report.
+    Format validation results into a human-readable text report with grouped format.
     
     Args:
         validation_result: The validation results to format
@@ -73,7 +73,6 @@ def format_results(validation_result: ValidationResult) -> str:
     
     # Header
     lines.append("moff-cli check results")
-    lines.append("=" * 50)
     
     # Timestamp
     timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -85,33 +84,47 @@ def format_results(validation_result: ValidationResult) -> str:
     
     # Summary section
     lines.append("Summary:")
-    lines.append("-" * 30)
-    lines.append(f"Files checked: {validation_result.files_checked}")
+    lines.append(f"  Files checked: {validation_result.files_checked}")
+    lines.append(f"  Total issues: {validation_result.total_issues}")
     
-    # Use pydantic computed fields for counts
-    lines.append(f"Errors: {validation_result.error_count}")
-    lines.append(f"Warnings: {validation_result.warning_count}")
-    lines.append(f"Info: {validation_result.info_count}")
-    lines.append(f"Status: {validation_result.status.upper()}")
+    # Show counts by severity if any exist
+    if validation_result.error_count > 0:
+        lines.append(f"  Errors: {validation_result.error_count}")
+    if validation_result.warning_count > 0:
+        lines.append(f"  Warnings: {validation_result.warning_count}")
+    if validation_result.info_count > 0:
+        lines.append(f"  Info: {validation_result.info_count}")
+    
+    # Handle no violations case
+    if not validation_result.diagnostics:
+        lines.append("")
+        lines.append("✓ All checks passed!")
+        lines.append("No validation issues found.")
+        return "\n".join(lines)
+    
+    # Group diagnostics by file
     lines.append("")
+    lines.append("Issues found:")
     
-    # Violations section
-    if validation_result.diagnostics:
-        lines.append("Violations:")
-        lines.append("-" * 30)
-        
-        # Sort diagnostics for deterministic output
-        sorted_diagnostics = sort_diagnostics(validation_result.diagnostics)
-        
-        for diagnostic in sorted_diagnostics:
-            line = format_diagnostic(diagnostic)
-            lines.append(line)
-    else:
-        lines.append("No violations found.")
+    by_file = {}
+    for diagnostic in validation_result.diagnostics:
+        file_key = diagnostic.path or "[root]"
+        if file_key not in by_file:
+            by_file[file_key] = []
+        by_file[file_key].append(diagnostic)
     
-    lines.append("")
-    lines.append("=" * 50)
-    lines.append("End of report")
+    # Format grouped diagnostics
+    for file_path in sorted(by_file.keys()):
+        lines.append("")
+        lines.append(f"{file_path}:")
+        
+        # Sort diagnostics within each file
+        file_diags = sorted(by_file[file_path], 
+                          key=lambda d: (d.line or 0, d.rule))
+        
+        for diagnostic in file_diags:
+            line_info = f" (line {diagnostic.line})" if diagnostic.line else ""
+            lines.append(f"  {diagnostic.severity}  {diagnostic.rule}: {diagnostic.message}{line_info}")
     
     return "\n".join(lines)
 ```
@@ -121,7 +134,7 @@ def format_results(validation_result: ValidationResult) -> str:
 ```python
 def format_diagnostic(diagnostic: Diagnostic) -> str:
     """
-    Format a single diagnostic into a text line.
+    Format a single diagnostic into a text line (used within grouped file sections).
     
     Args:
         diagnostic: The diagnostic to format
@@ -129,30 +142,11 @@ def format_diagnostic(diagnostic: Diagnostic) -> str:
     Returns:
         Formatted string representation of the diagnostic
     """
-    # Severity indicator
-    severity_map = {
-        "error": "[ERROR]",
-        "warning": "[WARNING]",
-        "info": "[INFO]"
-    }
-    severity_text = severity_map.get(diagnostic.severity, "[UNKNOWN]")
+    # Build the diagnostic line
+    # Format: severity  rule: message (line X)
+    line_info = f" (line {diagnostic.line})" if diagnostic.line else ""
     
-    # Build file reference
-    file_ref = str(diagnostic.path)
-    if diagnostic.line:
-        file_ref += f":{diagnostic.line}"
-    
-    # Format: [SEVERITY] path/to/file.md:line | rule.category | Message
-    parts = [
-        severity_text,
-        file_ref,
-        "|",
-        diagnostic.rule,
-        "|",
-        diagnostic.message
-    ]
-    
-    return " ".join(parts)
+    return f"  {diagnostic.severity}  {diagnostic.rule}: {diagnostic.message}{line_info}"
 ```
 
 ## Sorting and Determinism
@@ -339,47 +333,39 @@ def create_backup(output_path: Path) -> None:
 ### Successful validation
 ```
 moff-cli check results
-==================================================
 Generated: 2024-01-15 14:30:22 UTC
 Root: moff-cli/moff-cli
 
 Summary:
-------------------------------
-Files checked: 10
-Errors: 0
-Warnings: 0
-Info: 0
-Status: PASSED
+  Files checked: 10
+  Total issues: 0
 
-No violations found.
-
-==================================================
-End of report
+✓ All checks passed!
+No validation issues found.
 ```
 
 ### Failed validation
 ```
 moff-cli check results
-==================================================
 Generated: 2024-01-15 14:30:22 UTC
 Root: moff-cli/moff-cli
 
 Summary:
-------------------------------
-Files checked: 10
-Errors: 2
-Warnings: 1
-Info: 0
-Status: FAILED
+  Files checked: 10
+  Total issues: 3
+  Errors: 2
+  Warnings: 1
 
-Violations:
-------------------------------
-[ERROR] collector/tech_collector.md | location.subdirs_only | File must not be in root directory
-[ERROR] tree/feature_tree.md:45 | headers.missing | Missing required header level=2 text='Requirements'
-[WARNING] check/feature_check.md:12 | frontmatter.type.linked_features | Invalid type for optional field linked_features: expected list
+Issues found:
 
-==================================================
-End of report
+check/feature_check.md:
+  warning  frontmatter.type.linked_features: Invalid type for optional field linked_features: expected list (line 12)
+
+collector/tech_collector.md:
+  error  location.subdirs_only: File must not be in root directory
+
+tree/feature_tree.md:
+  error  headers.missing: Missing required header level=2 text='Requirements' (line 45)
 ```
 
 ## Performance Considerations

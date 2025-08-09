@@ -62,13 +62,16 @@ class TestSaveFeature:
 
             # Check summary
             assert "Summary:" in content
-            assert "- Files checked: 5" in content
-            assert "- Violations: 2" in content
-            assert "- Status: FAILED" in content
+            assert "Files checked: 5" in content
+            assert "Total issues: 2" in content
+            assert "Errors: 2" in content
 
-            # Check violations format (specification format)
-            assert "[ERROR] collector/tech_collector.md | location.subdirs_only | File is not allowed in root directory" in content
-            assert "[ERROR] tree/feature_tree.md:15 | headers.missing | Missing required header level=2 text='Requirements'" in content
+            # Check violations format (grouped format)
+            assert "Issues found:" in content
+            assert "collector/tech_collector.md:" in content
+            assert "  error  location.subdirs_only: File is not allowed in root directory" in content
+            assert "tree/feature_tree.md:" in content
+            assert "  error  headers.missing: Missing required header level=2 text='Requirements' (line 15)" in content
 
     def test_save_no_violations(self):
         """Test save_results when there are no violations."""
@@ -87,14 +90,14 @@ class TestSaveFeature:
             content = results_path.read_text()
 
             # Check summary for no violations
-            assert "- Files checked: 10" in content
-            assert "- Violations: 0" in content
-            assert "- Status: PASSED" in content
+            assert "Files checked: 10" in content
+            assert "Total issues: 0" in content
+            assert "✓ All checks passed!" in content
+            assert "No validation issues found." in content
 
-            # When there are no violations, the "Violations:" section header should not be present
-            # Check that "Violations:" doesn't appear as a section header (on its own line)
+            # When there are no violations, the "Issues found:" section should not be present
             lines = content.split('\n')
-            assert not any(line.strip() == "Violations:" for line in lines)
+            assert not any(line.strip() == "Issues found:" for line in lines)
 
     def test_save_mixed_severities(self):
         """Test save_results with mixed severity levels."""
@@ -135,14 +138,16 @@ class TestSaveFeature:
             results_path = checker.save_results(tmppath, diagnostics)
             content = results_path.read_text()
 
-            # Check all severities are present
-            assert "[ERROR]" in content
-            assert "[WARNING]" in content
-            assert "[INFO]" in content
+            # Check all severities are present in the grouped format
+            assert "error" in content
+            assert "warning" in content
+            assert "info" in content
 
             # Check violations count
-            assert "- Violations: 3" in content
-            assert "- Status: FAILED" in content  # Status is FAILED when there are errors
+            assert "Total issues: 3" in content
+            assert "Errors: 1" in content
+            assert "Warnings: 1" in content
+            assert "Info: 1" in content
 
     def test_save_deterministic_order(self):
         """Test that violations are saved in deterministic order."""
@@ -194,13 +199,21 @@ class TestSaveFeature:
 
             # Extract violation lines
             lines = content.split('\n')
-            violation_lines = [l for l in lines if l.startswith('[')]
 
-            # Check order: sorted by path, then line, then rule
-            assert violation_lines[0].startswith("[ERROR] a_file.md:10 | a_rule")
-            assert violation_lines[1].startswith("[ERROR] a_file.md:10 | b_rule")
-            assert violation_lines[2].startswith("[ERROR] b_file.md:5 | a_rule")
-            assert violation_lines[3].startswith("[ERROR] b_file.md:20 | z_rule")
+            # Check grouped format: files are sorted, then diagnostics within each file are sorted by line, then rule
+            # Files should appear in alphabetical order
+            a_file_index = lines.index("a_file.md:")
+            b_file_index = lines.index("b_file.md:")
+            assert a_file_index < b_file_index
+
+            # Check diagnostics order within each file
+            # For a_file.md (both at line 10, sorted by rule)
+            assert lines[a_file_index + 1].strip() == "error  a_rule: Message A (line 10)"
+            assert lines[a_file_index + 2].strip() == "error  b_rule: Message A2 (line 10)"
+
+            # For b_file.md (sorted by line number)
+            assert lines[b_file_index + 1].strip() == "error  a_rule: Message B2 (line 5)"
+            assert lines[b_file_index + 2].strip() == "error  z_rule: Message B (line 20)"
 
     def test_save_utf8_encoding(self):
         """Test that save_results uses UTF-8 encoding."""
@@ -297,12 +310,12 @@ class TestSaveFeature:
             content = results_path.read_text()
 
             # Should show 4 files checked (1 project + 3 features)
-            assert "- Files checked: 4" in content
+            assert "Files checked: 4" in content
 
-            # Only feature_three should have a violation
-            assert "feature_three.md" in content
-            assert "feature_one.md" not in content
-            assert "feature_two.md" not in content
+            # Only feature_three should have a violation (in grouped format)
+            assert "features/feature_three.md:" in content
+            assert "features/feature_one.md:" not in content
+            assert "features/feature_two.md:" not in content
 
 
 class TestSaveIntegrationWithCLI:

@@ -22,13 +22,17 @@ Generated: 2024-01-15 14:30:22 UTC
 Root: moff-cli/moff-cli
 
 Summary:
-- Files checked: 5
-- Violations: 2
-- Status: FAILED
+  Files checked: 5
+  Total issues: 2
+  Errors: 2
 
-Violations:
-[ERROR] collector/tech_collector.md | location.subdirs_only | File is not allowed in root directory
-[ERROR] tree/feature_tree.md:15 | headers.missing | Missing required header level=2 text='Requirements'
+Issues found:
+
+collector/tech_collector.md:
+  error  location.subdirs_only: File is not allowed in root directory
+
+tree/feature_tree.md:
+  error  headers.missing: Missing required header level=2 text='Requirements' (line 15)
 ```
 
 ## Integration with check

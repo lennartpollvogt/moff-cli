@@ -433,6 +433,94 @@ class Checker:
                         )
                         break
 
+    def format_diagnostics(
+        self,
+        diagnostics: list[Diagnostic],
+        root_directory: Path | None = None,
+        use_colors: bool = False,
+        include_header: bool = False,
+        include_summary: bool = True
+    ) -> list[str]:
+        """Format diagnostics in a human-readable grouped format.
+
+        Args:
+            diagnostics: List of diagnostics to format.
+            root_directory: Root directory path (for header).
+            use_colors: Whether to include color codes (for terminal).
+            include_header: Whether to include header with timestamp.
+            include_summary: Whether to include summary statistics.
+
+        Returns:
+            List of formatted strings (lines).
+        """
+        lines = []
+
+        # Add header if requested
+        if include_header:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+            lines.extend([
+                "moff-cli check results",
+                f"Generated: {timestamp}",
+            ])
+            if root_directory:
+                lines.append(f"Root: {root_directory}")
+            lines.append("")
+
+        # Add summary if requested
+        if include_summary:
+            total_issues = len(diagnostics)
+            errors = [d for d in diagnostics if d.severity == Severity.ERROR]
+            warnings = [d for d in diagnostics if d.severity == Severity.WARNING]
+            info_msgs = [d for d in diagnostics if d.severity == Severity.INFO]
+
+            lines.append("Summary:")
+            lines.append(f"  Files checked: {self.total_files_checked}")
+            lines.append(f"  Total issues: {total_issues}")
+            if errors:
+                lines.append(f"  Errors: {len(errors)}")
+            if warnings:
+                lines.append(f"  Warnings: {len(warnings)}")
+            if info_msgs:
+                lines.append(f"  Info: {len(info_msgs)}")
+
+            if not diagnostics:
+                lines.extend([
+                    "",
+                    "✓ All checks passed!",
+                    "No validation issues found."
+                ])
+                return lines
+
+        # Group diagnostics by file
+        by_file = {}
+        for diag in diagnostics:
+            file_key = diag.path or "[root]"
+            if file_key not in by_file:
+                by_file[file_key] = []
+            by_file[file_key].append(diag)
+
+        # Format grouped diagnostics
+        if by_file:
+            lines.append("")
+            lines.append("Issues found:")
+
+            for file_path in sorted(by_file.keys()):
+                lines.append("")
+                lines.append(f"{file_path}:")
+
+                # Sort diagnostics within each file for deterministic output
+                file_diags = sorted(by_file[file_path], key=lambda d: (d.line or 0, d.rule))
+
+                for diag in file_diags:
+                    severity = diag.severity.value
+                    line_info = f" (line {diag.line})" if diag.line else ""
+
+                    # Format the diagnostic line
+                    diag_line = f"  {severity}  {diag.rule}: {diag.message}{line_info}"
+                    lines.append(diag_line)
+
+        return lines
+
     def save_results(self, root_directory: Path, diagnostics: list[Diagnostic]) -> Path:
         """Save validation results to moff_results.txt.
 
@@ -445,44 +533,22 @@ class Checker:
         """
         results_path = root_directory / "moff_results.txt"
 
-        # Generate timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
-
-        # Count statistics
-        total_violations = len(diagnostics)
-        status = "PASSED" if total_violations == 0 else "FAILED"
-
-        # Build results content
-        lines = [
-            "moff-cli check results",
-            f"Generated: {timestamp}",
-            f"Root: {root_directory}",
-            "",
-            "Summary:",
-            f"- Files checked: {self.total_files_checked}",
-            f"- Violations: {total_violations}",
-            f"- Status: {status}",
-        ]
-
-        if diagnostics:
-            lines.extend([
-                "",
-                "Violations:",
-            ])
-
-            # Sort diagnostics for deterministic output
-            sorted_diagnostics = sorted(diagnostics, key=lambda d: (d.path, d.line or 0, d.rule))
-
-            for diag in sorted_diagnostics:
-                severity = diag.severity.value.upper()
-                line_info = f":{diag.line}" if diag.line else ""
-                lines.append(
-                    f"[{severity}] {diag.path}{line_info} | {diag.rule} | {diag.message}"
-                )
+        # Use the unified formatter to get formatted lines
+        lines = self.format_diagnostics(
+            diagnostics,
+            root_directory=root_directory,
+            use_colors=False,  # No colors in file output
+            include_header=True,
+            include_summary=True
+        )
 
         # Write to file
         with open(results_path, 'w', encoding='utf-8') as f:
+            # Remove any trailing empty lines
+            while lines and lines[-1] == "":
+                lines.pop()
             f.write('\n'.join(lines))
+            f.write('\n')  # Add final newline
 
         return results_path
 
