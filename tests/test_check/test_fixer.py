@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from moff_cli.check import Checker, Diagnostic, Fixer, Severity
+from moff_cli.check import Checker, Fixer
 from moff_cli.collector import Collector
 from moff_cli.settings import Settings
 

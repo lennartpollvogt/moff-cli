@@ -88,7 +88,7 @@ def cmd_check(args: argparse.Namespace) -> int:
             collector = Collector(settings, start_path=args.path or Path.cwd())
             collected_data = collector.collect()
             diagnostics = checker.check(collected_data)
-            console.print(f"[green]Fixes applied successfully![/green]\n")
+            console.print("[green]Fixes applied successfully![/green]\n")
 
     # Display results using the unified formatter
     formatted_lines = checker.format_diagnostics(

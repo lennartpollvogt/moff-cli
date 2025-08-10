@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 
@@ -23,9 +23,9 @@ class Fixer:
 
     def fix_files(
         self,
-        collected_data: Dict[str, Any],
-        diagnostics: List[Diagnostic]
-    ) -> Dict[str, List[str]]:
+        collected_data: dict[str, Any],
+        diagnostics: list[Diagnostic]
+    ) -> dict[str, list[str]]:
         """Fix issues in multiple files.
 
         Args:
@@ -96,10 +96,10 @@ class Fixer:
     def fix_file(
         self,
         file_path: Path,
-        diagnostics: List[Diagnostic],
-        md_data: List[dict],
+        diagnostics: list[Diagnostic],
+        md_data: list[dict],
         prefix_name: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Fix issues in a single file.
 
         Args:
@@ -156,11 +156,11 @@ class Fixer:
 
     def _fix_frontmatter_issues(
         self,
-        lines: List[str],
-        diagnostics: List[Diagnostic],
+        lines: list[str],
+        diagnostics: list[Diagnostic],
         prefix_config: Any,
-        md_data: List[dict]
-    ) -> tuple[List[str], List[str]]:
+        md_data: list[dict]
+    ) -> tuple[list[str], list[str]]:
         """Fix frontmatter-related issues.
 
         Args:
@@ -201,9 +201,9 @@ class Fixer:
 
     def _add_missing_frontmatter(
         self,
-        lines: List[str],
+        lines: list[str],
         prefix_config: Any
-    ) -> tuple[List[str], List[str]]:
+    ) -> tuple[list[str], list[str]]:
         """Add complete frontmatter block when missing.
 
         Args:
@@ -259,11 +259,11 @@ class Fixer:
 
     def _add_missing_frontmatter_fields(
         self,
-        lines: List[str],
-        diagnostics: List[Diagnostic],
+        lines: list[str],
+        diagnostics: list[Diagnostic],
         prefix_config: Any,
-        md_data: List[dict]
-    ) -> tuple[List[str], List[str]]:
+        md_data: list[dict]
+    ) -> tuple[list[str], list[str]]:
         """Add missing fields to existing frontmatter.
 
         Args:
@@ -351,11 +351,11 @@ class Fixer:
 
     def _fix_header_issues(
         self,
-        lines: List[str],
-        diagnostics: List[Diagnostic],
+        lines: list[str],
+        diagnostics: list[Diagnostic],
         prefix_config: Any,
-        md_data: List[dict]
-    ) -> tuple[List[str], List[str]]:
+        md_data: list[dict]
+    ) -> tuple[list[str], list[str]]:
         """Fix header-related issues.
 
         Args:
@@ -395,11 +395,11 @@ class Fixer:
 
     def _fix_wrong_header_levels(
         self,
-        lines: List[str],
-        diagnostics: List[Diagnostic],
+        lines: list[str],
+        diagnostics: list[Diagnostic],
         prefix_config: Any,
-        md_data: List[dict]
-    ) -> tuple[List[str], List[str]]:
+        md_data: list[dict]
+    ) -> tuple[list[str], list[str]]:
         """Fix headers with wrong levels.
 
         Args:
@@ -445,11 +445,11 @@ class Fixer:
 
     def _add_missing_headers(
         self,
-        lines: List[str],
-        diagnostics: List[Diagnostic],
+        lines: list[str],
+        diagnostics: list[Diagnostic],
         prefix_config: Any,
-        md_data: List[dict]
-    ) -> tuple[List[str], List[str]]:
+        md_data: list[dict]
+    ) -> tuple[list[str], list[str]]:
         """Add missing headers at correct positions.
 
         Args:
@@ -529,9 +529,9 @@ class Fixer:
     def _find_header_insertion_point(
         self,
         target_header: Any,
-        required_headers: List[Any],
-        existing_headers: List[dict],
-        lines: List[str]
+        required_headers: list[Any],
+        existing_headers: list[dict],
+        lines: list[str]
     ) -> int:
         """Find the best position to insert a missing header.
 
