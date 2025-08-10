@@ -472,7 +472,10 @@ class Fixer:
                 text = match.group(2)
                 missing_headers.append({"level": level, "text": text})
 
-        # Get existing headers to determine insertion points
+        if not missing_headers:
+            return lines, applied_fixes
+
+        # Get existing headers in the file
         existing_headers = []
         for i, line in enumerate(lines):
             header_match = re.match(r'^(#+)\s+(.+)$', line)
@@ -486,62 +489,83 @@ class Fixer:
         # Get the required headers from config to maintain order
         required_headers = prefix_config.headers_required
 
-        # Determine where to insert each missing header
-        insertions = []  # List of (line_index, header_content) tuples
+        # Process headers: fix wrong levels in-place and track what needs to be added
+        headers_to_add = []
 
         for req_header in required_headers:
-            # Check if this header is missing
+            # Check if this header is in our missing list
             is_missing = any(
                 h["level"] == req_header.level and h["text"] == req_header.text
                 for h in missing_headers
             )
 
             if is_missing:
-                # First check if a header with the same text exists at wrong level
-                existing_wrong_level = None
+                # Check if header exists with wrong level
+                existing_wrong = None
                 for existing in existing_headers:
-                    if existing["text"] == req_header.text and existing["level"] != req_header.level:
-                        existing_wrong_level = existing
+                    if existing["text"] == req_header.text:
+                        existing_wrong = existing
                         break
 
-                if existing_wrong_level:
-                    # Fix the existing header's level instead of adding a new one
-                    line_idx = existing_wrong_level["line_index"]
+                if existing_wrong:
+                    # Fix the existing header's level in-place
+                    line_idx = existing_wrong["line_index"]
                     new_header = "#" * req_header.level + " " + req_header.text
                     # Preserve the line ending
                     if lines[line_idx].endswith("\n"):
                         new_header += "\n"
                     lines[line_idx] = new_header
                     applied_fixes.append(
-                        f"Fixed header level for '{req_header.text}' from {existing_wrong_level['level']} to {req_header.level}"
+                        f"Fixed header level for '{req_header.text}' from {existing_wrong['level']} to {req_header.level}"
                     )
                 else:
                     # Header doesn't exist at all, need to add it
-                    insert_index = self._find_header_insertion_point(
-                        req_header,
-                        required_headers,
-                        existing_headers,
-                        lines
-                    )
-
-                    header_content = "#" * req_header.level + " " + req_header.text + "\n"
-                    insertions.append((insert_index, header_content))
+                    headers_to_add.append(req_header)
                     applied_fixes.append(f"Added missing header: {req_header.text}")
 
-        # Sort insertions by index in reverse order to maintain correct positions
-        insertions.sort(key=lambda x: x[0], reverse=True)
+        # If we have headers to add, find the right place to insert them
+        if headers_to_add:
+            # Find where to insert the headers
+            insert_index = 0
+            frontmatter_count = 0
 
-        # Apply insertions
-        for insert_index, header_content in insertions:
-            # Add a blank line before the header if needed
-            if insert_index > 0 and lines[insert_index - 1].strip():
+            for i, line in enumerate(lines):
+                if line.strip() == "---":
+                    frontmatter_count += 1
+                    if frontmatter_count == 2:
+                        # End of frontmatter
+                        insert_index = i + 1
+                        break
+
+            # If no frontmatter, start at beginning
+            if insert_index == 0:
+                insert_index = 0
+
+            # Handle insertion point after frontmatter
+            if insert_index > 0:
+                # Check if we're at the end of the file
+                if insert_index >= len(lines):
+                    # We're at EOF after frontmatter
+                    # Ensure the last line (---) has a newline
+                    if lines and not lines[-1].endswith('\n'):
+                        lines[-1] += '\n'
+                    # Add a blank line after frontmatter
+                    lines.append('\n')
+                    insert_index = len(lines)
+                elif lines[insert_index - 1].strip() == "---":
+                    # Previous line is frontmatter delimiter, add blank line
+                    lines.insert(insert_index, "\n")
+                    insert_index += 1
+
+            # Insert headers in the correct order
+            for header in headers_to_add:
+                header_line = "#" * header.level + " " + header.text + "\n"
+                lines.insert(insert_index, header_line)
+                insert_index += 1
+
+                # Add a blank line after the header
                 lines.insert(insert_index, "\n")
-                lines.insert(insert_index + 1, header_content)
-            else:
-                lines.insert(insert_index, header_content)
-
-            # Add a blank line after the header
-            lines.insert(insert_index + 1, "\n")
+                insert_index += 1
 
         return lines, applied_fixes
 
