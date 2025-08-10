@@ -27,6 +27,7 @@ Perfect for projects where documentation quality and consistency matter, especia
 - **💾 Result Persistence**: Save validation results for CI/CD integration
 - **🎨 Rich Terminal Output**: Beautiful, colored output using Rich library
 - **📚 Verbose Mode**: Shows expected file structure templates when validation fails
+- **🔧 Auto-fix**: Automatically fix common issues like missing frontmatter and headers
 
 ## 📦 Installation
 
@@ -64,6 +65,7 @@ moff --version                 # Show version
 
 moff check                     # Run validation checks
 moff check --verbose          # Show expected structure for files with errors
+moff check --fix              # Automatically fix fixable issues
 moff check --save             # Run checks and save results to moff_results.txt
 moff check --save --verbose   # Save results with expected structure templates
 moff check --path ./docs      # Check specific directory
@@ -160,6 +162,35 @@ features/feature_broken.md:
 
   ## Requirements
 ```
+
+#### Fix Command
+
+When running `moff check`, you can use the `--fix` flag to automatically fix certain issues:
+
+```
+moff check --fix
+```
+
+Fixable issues include:
+- Missing frontmatter blocks
+- Missing required frontmatter fields
+- Missing required headers
+
+Example output:
+```
+Applying 3 automatic fixes...
+Fixed features/feature_broken.md:
+  • Added missing frontmatter block
+  • Added missing header: Overview
+  • Added missing header: Requirements
+
+Fixes applied successfully!
+```
+
+Note: Some issues cannot be automatically fixed, such as:
+- File location constraints (files in wrong directories)
+- Header ordering issues
+- Type mismatches in frontmatter values
 
 #### Tree Command
 ```

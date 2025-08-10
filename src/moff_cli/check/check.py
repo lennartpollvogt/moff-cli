@@ -32,6 +32,14 @@ class RuleCategory(str, Enum):
 class Diagnostic:
     """Represents a validation diagnostic."""
 
+    # List of fixable rule types
+    FIXABLE_RULES = {
+        "frontmatter.missing",
+        "frontmatter.missing_field",
+        "headers.missing",
+        "headers.wrong_level"
+    }
+
     def __init__(
         self,
         path: str,
@@ -57,6 +65,7 @@ class Diagnostic:
         self.message = message
         self.severity = severity
         self.line = line
+        self.fixable = rule in self.FIXABLE_RULES
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
@@ -66,7 +75,8 @@ class Diagnostic:
             "rule": self.rule,
             "message": self.message,
             "severity": self.severity.value,
-            "line": self.line
+            "line": self.line,
+            "fixable": self.fixable
         }
 
     def __str__(self) -> str:
@@ -528,6 +538,7 @@ class Checker:
             errors = [d for d in diagnostics if d.severity == Severity.ERROR]
             warnings = [d for d in diagnostics if d.severity == Severity.WARNING]
             info_msgs = [d for d in diagnostics if d.severity == Severity.INFO]
+            fixable = [d for d in diagnostics if d.fixable]
 
             lines.append("Summary:")
             lines.append(f"  Files checked: {self.total_files_checked}")
@@ -538,6 +549,8 @@ class Checker:
                 lines.append(f"  Warnings: {len(warnings)}")
             if info_msgs:
                 lines.append(f"  Info: {len(info_msgs)}")
+            if fixable:
+                lines.append(f"  Possible fixes: {len(fixable)}")
 
             if not diagnostics:
                 lines.extend([

@@ -5,7 +5,7 @@ Designed to work seamlessly with LLMs in modern IDEs.
 """
 
 from .__version__ import __version__
-from .check import Checker, Diagnostic, RuleCategory, Severity
+from .check import Checker, Diagnostic, Fixer, RuleCategory, Severity
 from .cli import main
 from .collector import Collector
 from .settings import (
@@ -38,6 +38,7 @@ __all__ = [
     # Check module
     "Checker",
     "Diagnostic",
+    "Fixer",
     "Severity",
     "RuleCategory",
 
