@@ -1,7 +1,7 @@
 ---
 project: moff-cli
 feature: check
-linked_features: [feature_check.md]
+linked_features: [check]
 ---
 
 # Technical Details
@@ -36,21 +36,21 @@ class Diagnostic(BaseModel):
     message: str  # Human-readable error message
     severity: Literal["error", "warning", "info"] = "error"
     line: Optional[int] = Field(None, ge=1)  # Line numbers start at 1
-    
+
     @validator('path')
     def path_must_be_relative(cls, v):
         """Ensure diagnostic paths are relative, not absolute"""
         if v.is_absolute():
             raise ValueError("Diagnostic paths must be relative")
         return v
-    
+
     @validator('rule')
     def rule_format(cls, v):
         """Validate rule follows expected format"""
         if not v or not any(c.isalpha() for c in v):
             raise ValueError("Rule must contain at least one letter")
         return v
-    
+
     class Config:
         # Allow Path objects to be serialized
         json_encoders = {
@@ -63,25 +63,25 @@ class ValidationResult(BaseModel):
     files_checked: int = Field(ge=0)
     root_directory: Path
     status: Literal["passed", "failed"]
-    
+
     @computed_field
     @property
     def error_count(self) -> int:
         """Count of error-level diagnostics"""
         return sum(1 for d in self.diagnostics if d.severity == "error")
-    
+
     @computed_field
     @property
     def warning_count(self) -> int:
         """Count of warning-level diagnostics"""
         return sum(1 for d in self.diagnostics if d.severity == "warning")
-    
+
     @computed_field
     @property
     def info_count(self) -> int:
         """Count of info-level diagnostics"""
         return sum(1 for d in self.diagnostics if d.severity == "info")
-    
+
     @validator('status')
     def status_matches_diagnostics(cls, v, values):
         """Ensure status reflects presence of errors"""
@@ -93,7 +93,7 @@ class ValidationResult(BaseModel):
             # Allow failed status even without errors (for future use cases)
             pass
         return v
-    
+
     class Config:
         json_encoders = {
             Path: str
@@ -109,30 +109,30 @@ def check_documentation(
 ) -> ValidationResult:
     """
     Main entry point for documentation validation.
-    
+
     Args:
         collector_output: Output from the collector feature
         settings: Effective settings with validation rules
-    
+
     Returns:
         ValidationResult containing all diagnostics
     """
     diagnostics = []
     files_checked = 0
     root_directory = Path(collector_output["root_directory"])
-    
+
     # 1. Validate root conditions
     root_diagnostics = validate_root_conditions(collector_output, settings)
     diagnostics.extend(root_diagnostics)
-    
+
     # 2. Validate each prefix group
     for prefix_name, prefix_config in settings.prefixes.items():
         if prefix_name in collector_output:
             prefix_files = collector_output[prefix_name]
-            
+
             for file_path, file_data in prefix_files.items():
                 files_checked += 1
-                
+
                 # Validate individual file
                 file_diagnostics = validate_file(
                     file_path=Path(file_path),
@@ -142,11 +142,11 @@ def check_documentation(
                     settings=settings
                 )
                 diagnostics.extend(file_diagnostics)
-    
+
     # Determine overall status
     has_errors = any(d.severity == "error" for d in diagnostics)
     status = "failed" if has_errors else "passed"
-    
+
     return ValidationResult(
         diagnostics=diagnostics,
         files_checked=files_checked,
@@ -165,7 +165,7 @@ def validate_root_conditions(
     """Validate root-level conditions"""
     diagnostics = []
     root_info = collector_output.get("root", {})
-    
+
     # Check if root file is missing
     if not root_info.get("root_file") and not root_info.get("detection", {}).get("override_path_used"):
         diagnostics.append(Diagnostic(
@@ -175,7 +175,7 @@ def validate_root_conditions(
             message="No project file found to determine documentation root",
             severity="error"
         ))
-    
+
     # Check for multiple root candidates
     additional_candidates = root_info.get("additional_root_candidates", [])
     if additional_candidates:
@@ -186,7 +186,7 @@ def validate_root_conditions(
             message=f"Multiple project files found: {', '.join(additional_candidates)}",
             severity="error"
         ))
-    
+
     # Check if project prefix has files
     project_files = collector_output.get("project", {})
     if not project_files:
@@ -197,7 +197,7 @@ def validate_root_conditions(
             message="No project file found in documentation root",
             severity="error"
         ))
-    
+
     return diagnostics
 ```
 
@@ -213,26 +213,26 @@ def validate_file(
 ) -> List[Diagnostic]:
     """Validate a single file against its prefix rules"""
     diagnostics = []
-    
+
     # 1. Location validation
     location_diagnostic = validate_location(
         file_path, file_data, prefix_name, prefix_config
     )
     if location_diagnostic:
         diagnostics.append(location_diagnostic)
-    
+
     # 2. Frontmatter validation
     frontmatter_diagnostics = validate_frontmatter(
         file_path, file_data, prefix_name, prefix_config
     )
     diagnostics.extend(frontmatter_diagnostics)
-    
+
     # 3. Headers validation
     header_diagnostics = validate_headers(
         file_path, file_data, prefix_name, prefix_config
     )
     diagnostics.extend(header_diagnostics)
-    
+
     return diagnostics
 ```
 
@@ -248,7 +248,7 @@ def validate_location(
     """Validate file location constraints"""
     is_in_root = file_data.get("is_in_root", False)
     location_rule = prefix_config.location
-    
+
     if location_rule == "root_only" and not is_in_root:
         return Diagnostic(
             path=file_path,
@@ -257,7 +257,7 @@ def validate_location(
             message=f"{prefix_name} files must be in the root directory",
             severity="error"
         )
-    
+
     if location_rule == "subdirs_only" and is_in_root:
         return Diagnostic(
             path=file_path,
@@ -266,7 +266,7 @@ def validate_location(
             message=f"{prefix_name} files must not be in the root directory",
             severity="error"
         )
-    
+
     return None
 ```
 
@@ -282,7 +282,7 @@ def validate_frontmatter(
     """Validate frontmatter/metadata requirements"""
     diagnostics = []
     md_list = file_data.get("md_list", [])
-    
+
     # Find metadata in md_list
     metadata = None
     metadata_line = None
@@ -291,7 +291,7 @@ def validate_frontmatter(
             metadata = item["metadata"]
             metadata_line = item.get("start_line")
             break
-    
+
     # Check required fields
     for field_name, field_type in prefix_config.frontmatter.required.items():
         if metadata is None:
@@ -303,7 +303,7 @@ def validate_frontmatter(
                 severity="error"
             ))
             break
-        
+
         if field_name not in metadata:
             diagnostics.append(Diagnostic(
                 path=file_path,
@@ -325,7 +325,7 @@ def validate_frontmatter(
                     severity="error",
                     line=metadata_line
                 ))
-    
+
     # Check optional fields if present
     if metadata and prefix_config.frontmatter.optional:
         for field_name, field_type in prefix_config.frontmatter.optional.items():
@@ -340,7 +340,7 @@ def validate_frontmatter(
                         severity="warning",
                         line=metadata_line
                     ))
-    
+
     return diagnostics
 
 def validate_field_type(value: Any, expected_type: str) -> bool:
@@ -352,7 +352,7 @@ def validate_field_type(value: Any, expected_type: str) -> bool:
         "list": lambda v: isinstance(v, list),
         "object": lambda v: isinstance(v, dict)
     }
-    
+
     check_func = type_checks.get(expected_type)
     return check_func(value) if check_func else False
 ```
@@ -371,7 +371,7 @@ def validate_headers(
     """Validate header requirements and order"""
     diagnostics = []
     md_list = file_data.get("md_list", [])
-    
+
     # Extract headers from md_list
     headers = []
     for item in md_list:
@@ -381,11 +381,11 @@ def validate_headers(
                 "content": item["header"]["content"],
                 "line": item.get("start_line")
             })
-    
+
     # Check required headers
     required_headers = prefix_config.headers.required
     order_mode = prefix_config.headers.order
-    
+
     # Find matches for required headers
     matched_indices = []
     for req_header in required_headers:
@@ -400,7 +400,7 @@ def validate_headers(
             ))
         else:
             matched_indices.append(match_index)
-    
+
     # Validate order if all required headers are present
     if len(matched_indices) == len(required_headers) and matched_indices:
         if not validate_header_order(matched_indices, order_mode):
@@ -411,7 +411,7 @@ def validate_headers(
                 message=f"Headers not in required order (mode: {order_mode})",
                 severity="error"
             ))
-    
+
     return diagnostics
 
 def find_header_match(headers: List[Dict], required: HeaderRule) -> Optional[int]:
@@ -419,27 +419,27 @@ def find_header_match(headers: List[Dict], required: HeaderRule) -> Optional[int
     for i, header in enumerate(headers):
         if header["level"] != required.level:
             continue
-        
+
         if required.match == "exact":
             if header["content"] == required.text:
                 return i
         elif required.match == "regex":
             if re.match(required.text, header["content"]):
                 return i
-    
+
     return None
 
 def validate_header_order(indices: List[int], order_mode: str) -> bool:
     """Check if header indices follow the order rules"""
     if order_mode == "any":
         return True
-    
+
     if order_mode in ["strict", "in-order"]:
         # Check if indices are in ascending order
         for i in range(1, len(indices)):
             if indices[i] <= indices[i-1]:
                 return False
-    
+
     return True
 ```
 
@@ -449,37 +449,37 @@ def validate_header_order(indices: List[int], order_mode: str) -> bool:
 def generate_expected_structure(prefix_name: str, settings: Settings) -> List[str]:
     """
     Generate expected structure template for a given prefix.
-    
+
     Args:
         prefix_name: The prefix name (e.g., 'feature', 'tech', 'project')
         settings: Settings object containing prefix configurations
-    
+
     Returns:
         List of lines showing the expected structure
-    
+
     Example:
         >>> lines = generate_expected_structure("feature", settings)
         >>> print("\n".join(lines))
         ---
-        project: 
-        feature: 
+        project:
+        feature:
         linked_features: []
         ---
-        
+
         # Overview
-        
+
         ## Requirements
     """
     lines = []
     prefix_config = settings.get_prefix_config(prefix_name)
-    
+
     if not prefix_config:
         return lines
-    
+
     # Generate frontmatter template
     if prefix_config.frontmatter_required or prefix_config.frontmatter_optional:
         lines.append("---")
-        
+
         # Add required fields
         for field, field_type in prefix_config.frontmatter_required.items():
             if field_type == "string":
@@ -488,7 +488,7 @@ def generate_expected_structure(prefix_name: str, settings: Settings) -> List[st
                 lines.append(f"{field}: []")
             else:
                 lines.append(f"{field}: ")
-        
+
         # Add optional fields
         for field, field_type in prefix_config.frontmatter_optional.items():
             if not field.startswith("_"):  # Skip comment fields
@@ -498,10 +498,10 @@ def generate_expected_structure(prefix_name: str, settings: Settings) -> List[st
                     lines.append(f"{field}: []")
                 else:
                     lines.append(f"{field}: ")
-        
+
         lines.append("---")
         lines.append("")
-    
+
     # Generate headers template
     if prefix_config.headers_required:
         for header in prefix_config.headers_required:
@@ -509,7 +509,7 @@ def generate_expected_structure(prefix_name: str, settings: Settings) -> List[st
             text = header.text
             lines.append(f"{'#' * level} {text}")
             lines.append("")
-    
+
     return lines
 ```
 
@@ -532,7 +532,7 @@ def format_diagnostics(
 ) -> List[str]:
     """
     Format diagnostics in a human-readable grouped format.
-    
+
     Args:
         diagnostics: List of diagnostics to format
         root_directory: Root directory path (for header)
@@ -541,25 +541,25 @@ def format_diagnostics(
         include_summary: Whether to include summary statistics
         verbose: Whether to include expected structure templates for files with errors
         settings: Settings object needed for generating templates in verbose mode
-    
+
     Returns:
         List of formatted strings (lines)
-    
+
     Example output (verbose mode):
         features/feature_broken.md:
           error  headers.missing: Missing required header level=1 text='Overview'
           error  frontmatter.missing: Required frontmatter is missing (line 1)
-          
+
           Expected structure for this file type (feature):
           ---
-          project: 
-          feature: 
+          project:
+          feature:
           ---
-          
+
           # Overview
     """
     lines = []
-    
+
     # Add header if requested
     if include_header:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -570,12 +570,12 @@ def format_diagnostics(
         if root_directory:
             lines.append(f"Root: {root_directory}")
         lines.append("")
-    
+
     # Add summary section
     if include_summary:
         # ... summary formatting code ...
         pass
-    
+
     # Group diagnostics by file
     by_file = {}
     for diag in diagnostics:
@@ -583,26 +583,26 @@ def format_diagnostics(
         if file_key not in by_file:
             by_file[file_key] = []
         by_file[file_key].append(diag)
-    
+
     # Format grouped diagnostics
     if by_file:
         lines.append("")
         lines.append("Issues found:")
-        
+
         for file_path in sorted(by_file.keys()):
             lines.append("")
             lines.append(f"{file_path}:")
-            
+
             # Sort diagnostics within each file
-            file_diags = sorted(by_file[file_path], 
+            file_diags = sorted(by_file[file_path],
                               key=lambda d: (d.line or 0, d.rule))
-            
+
             for diag in file_diags:
                 severity = diag.severity
                 line_info = f" (line {diag.line})" if diag.line else ""
                 diag_line = f"  {severity}  {diag.rule}: {diag.message}{line_info}"
                 lines.append(diag_line)
-            
+
             # Add expected structure in verbose mode
             if verbose and settings and by_file[file_path]:
                 # Get the prefix from the first diagnostic of this file
@@ -616,23 +616,23 @@ def format_diagnostics(
                         lines.append(f"  Expected structure for this file type ({first_diag.prefix}):")
                         for struct_line in expected_structure:
                             lines.append(f"  {struct_line}")
-    
+
     return lines
 
 def display_results(result: ValidationResult) -> None:
     """Display validation results in the terminal"""
     console = Console()
-    
+
     # Header
     console.print(Panel.fit(
         f"[bold]moff check[/bold] - Documentation Validation",
         border_style="blue"
     ))
-    
+
     # Summary
     console.print(f"\nRoot: {result.root_directory}")
     console.print(f"Files checked: {result.files_checked}")
-    
+
     if result.status == "passed":
         console.print("[bold green]✓ All checks passed![/bold green]")
     else:
@@ -642,33 +642,33 @@ def display_results(result: ValidationResult) -> None:
         table.add_column("File")
         table.add_column("Rule")
         table.add_column("Message")
-        
+
         # Sort diagnostics
         sorted_diagnostics = sorted(
             result.diagnostics,
             key=lambda d: (str(d.path), d.line or 0, d.rule)
         )
-        
+
         for diagnostic in sorted_diagnostics:
             severity_style = {
                 "error": "red",
                 "warning": "yellow",
                 "info": "cyan"
             }.get(diagnostic.severity, "white")
-            
+
             file_display = str(diagnostic.path)
             if diagnostic.line:
                 file_display += f":{diagnostic.line}"
-            
+
             table.add_row(
                 f"[{severity_style}]{diagnostic.severity.upper()}[/{severity_style}]",
                 file_display,
                 diagnostic.rule,
                 diagnostic.message
             )
-        
+
         console.print(table)
-        
+
         # Summary counts using pydantic computed fields
         console.print(f"\n[bold red]Errors: {result.error_count}[/bold red]")
         if result.warning_count > 0:
@@ -687,39 +687,39 @@ def check_command(
 ) -> int:
     """
     Handle the 'moff check' command.
-    
+
     Args:
         path: Optional path to documentation root
         save: Whether to save results to moff_results.txt
         quiet: Suppress terminal output
         verbose: Whether to show expected structure templates for files with errors
-    
+
     Returns:
         Exit code (0 for success, non-zero for failures)
     """
     from moff_cli.collector import collect_documentation
     from moff_cli.settings import load_settings
     from moff_cli.save import save_results
-    
+
     # Determine root directory
     if path:
         root_dir = path
     else:
         root_dir = auto_detect_root()
-    
+
     # Load settings
     settings = load_settings(root_dir)
-    
+
     # Collect documentation
     collector_output = collect_documentation(settings)
-    
+
     # Run validation
     result = check_documentation(collector_output, settings)
-    
+
     # Display results
     if not quiet:
         display_results(result)
-    
+
     # Save if requested
     if save:
         from moff_cli.save import save_results
@@ -727,7 +727,7 @@ def check_command(
         if not quiet:
             console = Console()
             console.print(f"\n[green]Results saved to {root_dir}/moff_results.txt[/green]")
-    
+
     # Return appropriate exit code
     return 0 if result.status == "passed" else 1
 ```
@@ -744,8 +744,8 @@ def check_command(
 ```python
 from pydantic import ValidationError
 
-def create_diagnostic_safe(*, path: Path, prefix: str, rule: str, 
-                          message: str, severity: str = "error", 
+def create_diagnostic_safe(*, path: Path, prefix: str, rule: str,
+                          message: str, severity: str = "error",
                           line: Optional[int] = None) -> Optional[Diagnostic]:
     """
     Safely create a diagnostic with pydantic validation.

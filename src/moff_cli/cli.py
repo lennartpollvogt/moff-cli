@@ -11,7 +11,7 @@ from pathlib import Path
 from rich.console import Console
 
 from .__version__ import __version__
-from .check import Checker
+from .check import Checker, Fixer
 from .collector import Collector
 from .settings import Settings
 from .tree import TreeVisualizer
@@ -69,6 +69,27 @@ def cmd_check(args: argparse.Namespace) -> int:
     checker = Checker(settings)
     diagnostics = checker.check(collected_data)
 
+    # Apply fixes if requested
+    if getattr(args, 'fix', False):
+        fixable_diagnostics = [d for d in diagnostics if d.fixable]
+        if fixable_diagnostics:
+            console.print(f"\n[yellow]Applying {len(fixable_diagnostics)} automatic fixes...[/yellow]")
+            fixer = Fixer(settings)
+            fixes_applied = fixer.fix_files(collected_data, diagnostics)
+
+            # Show applied fixes
+            for file_path, fixes in fixes_applied.items():
+                console.print(f"[green]Fixed {file_path}:[/green]")
+                for fix in fixes:
+                    console.print(f"  • {fix}")
+
+            # Re-run validation to get updated diagnostics
+            console.print("\n[dim]Re-validating after fixes...[/dim]")
+            collector = Collector(settings, start_path=args.path or Path.cwd())
+            collected_data = collector.collect()
+            diagnostics = checker.check(collected_data)
+            console.print("[green]Fixes applied successfully![/green]\n")
+
     # Display results using the unified formatter
     formatted_lines = checker.format_diagnostics(
         diagnostics,
@@ -92,6 +113,8 @@ def cmd_check(args: argparse.Namespace) -> int:
             console.print(f"  [yellow]Warnings: {line.split(':')[1].strip()}[/yellow]")
         elif line.startswith("  Info:"):
             console.print(f"  [blue]Info: {line.split(':')[1].strip()}[/blue]")
+        elif line.startswith("  Possible fixes:"):
+            console.print(f"  [cyan]Possible fixes: {line.split(':')[1].strip()}[/cyan]")
         elif line.startswith("✓ All checks passed!"):
             console.print(f"[green]{line}[/green]")
         elif line.endswith(":") and not line.startswith("  "):
@@ -245,6 +268,11 @@ For more information, visit: https://github.com/yourusername/moff-cli
         "-v", "--verbose",
         action="store_true",
         help="Show verbose output"
+    )
+    parser_check.add_argument(
+        "--fix",
+        action="store_true",
+        help="Automatically fix fixable issues"
     )
 
     # Tree command
