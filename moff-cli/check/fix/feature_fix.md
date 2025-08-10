@@ -187,3 +187,32 @@ linked_features: [check]
 
 ## Requirements
 ```
+
+### Interaction with Other Options
+
+#### --save Option
+
+When `--fix` is used together with `--save`, the behavior is:
+
+1. **Initial diagnostics** are collected from the documentation
+2. **Fixes are applied** to resolve fixable issues
+3. **Re-validation** occurs to get the updated state
+4. **`moff_results.txt` is saved with the remaining issues** (after fixes)
+
+This means the saved results file will only contain:
+- Unfixable issues (like location constraints)
+- Issues that couldn't be automatically resolved
+- Any new issues that might have been revealed after fixing
+
+Example workflow:
+```bash
+# Check, fix, and save results in one command
+moff check --fix --save
+
+# The moff_results.txt will contain only the issues that remain after automatic fixes
+```
+
+This behavior ensures that:
+- The results file reflects the current state of the documentation
+- Users see what still needs manual attention
+- There's no confusion about which issues have already been addressed
