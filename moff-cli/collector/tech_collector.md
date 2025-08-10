@@ -1,7 +1,7 @@
 ---
 project: moff-cli
 feature: collector
-linked_features: [feature_collector.md]
+linked_features: [collector]
 ---
 
 # Technical Details

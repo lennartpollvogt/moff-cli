@@ -1,7 +1,7 @@
 ---
 project: moff-cli
 feature: save
-linked_features: [feature_save.md]
+linked_features: [save]
 ---
 
 # Technical Details
@@ -34,24 +34,24 @@ def save_results(
 ) -> None:
     """
     Save validation results to a text file in the root directory.
-    
+
     Args:
         validation_result: The validation results from check feature
         root_directory: Documentation root where file will be saved
         filename: Name of the output file (default: moff_results.txt)
-    
+
     Raises:
         IOError: If file cannot be written
     """
     output_path = root_directory / filename
-    
+
     try:
         content = format_results(validation_result)
-        
+
         # Write with UTF-8 encoding, overwriting existing file
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(content)
-            
+
     except IOError as e:
         raise IOError(f"Failed to save results to {output_path}: {e}")
 ```
@@ -62,31 +62,31 @@ def save_results(
 def format_results(validation_result: ValidationResult) -> str:
     """
     Format validation results into a human-readable text report with grouped format.
-    
+
     Args:
         validation_result: The validation results to format
-    
+
     Returns:
         Formatted string ready to write to file
     """
     lines = []
-    
+
     # Header
     lines.append("moff-cli check results")
-    
+
     # Timestamp
     timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
     lines.append(f"Generated: {timestamp}")
-    
+
     # Root directory
     lines.append(f"Root: {validation_result.root_directory}")
     lines.append("")
-    
+
     # Summary section
     lines.append("Summary:")
     lines.append(f"  Files checked: {validation_result.files_checked}")
     lines.append(f"  Total issues: {validation_result.total_issues}")
-    
+
     # Show counts by severity if any exist
     if validation_result.error_count > 0:
         lines.append(f"  Errors: {validation_result.error_count}")
@@ -94,38 +94,38 @@ def format_results(validation_result: ValidationResult) -> str:
         lines.append(f"  Warnings: {validation_result.warning_count}")
     if validation_result.info_count > 0:
         lines.append(f"  Info: {validation_result.info_count}")
-    
+
     # Handle no violations case
     if not validation_result.diagnostics:
         lines.append("")
         lines.append("✓ All checks passed!")
         lines.append("No validation issues found.")
         return "\n".join(lines)
-    
+
     # Group diagnostics by file
     lines.append("")
     lines.append("Issues found:")
-    
+
     by_file = {}
     for diagnostic in validation_result.diagnostics:
         file_key = diagnostic.path or "[root]"
         if file_key not in by_file:
             by_file[file_key] = []
         by_file[file_key].append(diagnostic)
-    
+
     # Format grouped diagnostics
     for file_path in sorted(by_file.keys()):
         lines.append("")
         lines.append(f"{file_path}:")
-        
+
         # Sort diagnostics within each file
-        file_diags = sorted(by_file[file_path], 
+        file_diags = sorted(by_file[file_path],
                           key=lambda d: (d.line or 0, d.rule))
-        
+
         for diagnostic in file_diags:
             line_info = f" (line {diagnostic.line})" if diagnostic.line else ""
             lines.append(f"  {diagnostic.severity}  {diagnostic.rule}: {diagnostic.message}{line_info}")
-    
+
     return "\n".join(lines)
 ```
 
@@ -135,17 +135,17 @@ def format_results(validation_result: ValidationResult) -> str:
 def format_diagnostic(diagnostic: Diagnostic) -> str:
     """
     Format a single diagnostic into a text line (used within grouped file sections).
-    
+
     Args:
         diagnostic: The diagnostic to format
-    
+
     Returns:
         Formatted string representation of the diagnostic
     """
     # Build the diagnostic line
     # Format: severity  rule: message (line X)
     line_info = f" (line {diagnostic.line})" if diagnostic.line else ""
-    
+
     return f"  {diagnostic.severity}  {diagnostic.rule}: {diagnostic.message}{line_info}"
 ```
 
@@ -155,21 +155,21 @@ def format_diagnostic(diagnostic: Diagnostic) -> str:
 def sort_diagnostics(diagnostics: List[Diagnostic]) -> List[Diagnostic]:
     """
     Sort diagnostics for deterministic output.
-    
+
     Sorting order:
     1. By file path (alphabetical)
     2. By line number (if available)
     3. By rule name
     4. By severity (errors first, then warnings, then info)
-    
+
     Args:
         diagnostics: List of diagnostics to sort
-    
+
     Returns:
         Sorted list of diagnostics
     """
     severity_order = {"error": 0, "warning": 1, "info": 2}
-    
+
     return sorted(
         diagnostics,
         key=lambda d: (
@@ -191,14 +191,14 @@ def save_results_json(
 ) -> None:
     """
     Save validation results in JSON format for programmatic consumption.
-    
+
     Args:
         validation_result: The validation results from check feature
         root_directory: Documentation root where file will be saved
         filename: Name of the output file
     """
     output_path = root_directory / filename
-    
+
     # Use pydantic's computed fields for summary
     result_dict = {
         "timestamp": datetime.utcnow().isoformat(),
@@ -223,7 +223,7 @@ def save_results_json(
             for d in sort_diagnostics(validation_result.diagnostics)
         ]
     }
-    
+
     try:
         # Alternative: Use pydantic's json() method
         # json_content = validation_result.json(indent=2, ensure_ascii=False)
@@ -240,19 +240,19 @@ def save_results_json(
 def integrate_with_check(check_result: ValidationResult, save_flag: bool) -> None:
     """
     Called by check feature when --save flag is provided.
-    
+
     Args:
         check_result: The validation result from check
         save_flag: Whether to save the results
     """
     if not save_flag:
         return
-    
+
     root_dir = check_result.root_directory
-    
+
     # Save text format (primary)
     save_results(check_result, root_dir, "moff_results.txt")
-    
+
     # Optionally save JSON format for CI/CD integration
     # save_results_json(check_result, root_dir, "moff_results.json")
 ```
@@ -268,14 +268,14 @@ def save_results_pydantic_json(
     """
     Save validation results using pydantic's native JSON serialization.
     This produces a pure representation of the ValidationResult model.
-    
+
     Args:
         validation_result: The pydantic ValidationResult model
         root_directory: Documentation root where file will be saved
         filename: Name of the output file
     """
     output_path = root_directory / filename
-    
+
     try:
         # Use pydantic's built-in JSON serialization
         json_content = validation_result.json(
@@ -284,10 +284,10 @@ def save_results_pydantic_json(
             # Include computed fields
             include={"error_count", "warning_count", "info_count"}
         )
-        
+
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(json_content)
-            
+
     except IOError as e:
         raise IOError(f"Failed to save pydantic JSON to {output_path}: {e}")
 ```
@@ -298,7 +298,7 @@ def save_results_pydantic_json(
 def cleanup_old_results(root_directory: Path, keep_count: int = 5) -> None:
     """
     Optional: Keep only the last N result files (for versioning).
-    
+
     Args:
         root_directory: Documentation root directory
         keep_count: Number of result files to keep
@@ -310,7 +310,7 @@ def cleanup_old_results(root_directory: Path, keep_count: int = 5) -> None:
 def create_backup(output_path: Path) -> None:
     """
     Create a backup of existing results before overwriting.
-    
+
     Args:
         output_path: Path to the results file
     """

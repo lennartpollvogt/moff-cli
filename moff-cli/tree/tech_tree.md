@@ -1,7 +1,7 @@
 ---
 project: moff-cli
 feature: tree
-linked_features: [feature_tree.md]
+linked_features: [tree]
 ---
 
 # Technical Details

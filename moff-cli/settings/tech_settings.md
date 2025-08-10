@@ -1,7 +1,7 @@
 ---
 project: moff-cli
 feature: settings
-linked_features: [feature_settings.md]
+linked_features: [settings]
 ---
 
 # Technical Details
