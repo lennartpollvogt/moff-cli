@@ -450,7 +450,7 @@ class Fixer:
         prefix_config: Any,
         md_data: list[dict]
     ) -> tuple[list[str], list[str]]:
-        """Add missing headers at correct positions.
+        """Add missing headers at correct positions or fix existing headers with wrong levels.
 
         Args:
             lines: File content as list of lines.
@@ -497,17 +497,36 @@ class Fixer:
             )
 
             if is_missing:
-                # Find the best insertion point
-                insert_index = self._find_header_insertion_point(
-                    req_header,
-                    required_headers,
-                    existing_headers,
-                    lines
-                )
+                # First check if a header with the same text exists at wrong level
+                existing_wrong_level = None
+                for existing in existing_headers:
+                    if existing["text"] == req_header.text and existing["level"] != req_header.level:
+                        existing_wrong_level = existing
+                        break
 
-                header_content = "#" * req_header.level + " " + req_header.text + "\n"
-                insertions.append((insert_index, header_content))
-                applied_fixes.append(f"Added missing header: {req_header.text}")
+                if existing_wrong_level:
+                    # Fix the existing header's level instead of adding a new one
+                    line_idx = existing_wrong_level["line_index"]
+                    new_header = "#" * req_header.level + " " + req_header.text
+                    # Preserve the line ending
+                    if lines[line_idx].endswith("\n"):
+                        new_header += "\n"
+                    lines[line_idx] = new_header
+                    applied_fixes.append(
+                        f"Fixed header level for '{req_header.text}' from {existing_wrong_level['level']} to {req_header.level}"
+                    )
+                else:
+                    # Header doesn't exist at all, need to add it
+                    insert_index = self._find_header_insertion_point(
+                        req_header,
+                        required_headers,
+                        existing_headers,
+                        lines
+                    )
+
+                    header_content = "#" * req_header.level + " " + req_header.text + "\n"
+                    insertions.append((insert_index, header_content))
+                    applied_fixes.append(f"Added missing header: {req_header.text}")
 
         # Sort insertions by index in reverse order to maintain correct positions
         insertions.sort(key=lambda x: x[0], reverse=True)
